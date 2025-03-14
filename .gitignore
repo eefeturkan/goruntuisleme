@@ -1,0 +1,23 @@
+# Klasörler
+uygulamalar/
+renk/
+__pycache__/
+.vscode/
+.idea/
+
+# Geçici dosyalar
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+.venv
+
+# Sistem dosyaları
+.DS_Store
+Thumbs.db 
