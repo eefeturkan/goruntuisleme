@@ -2,6 +2,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, Scale, Label, Button, Frame, HORIZONTAL, RIDGE, SUNKEN, RAISED
 from tkinter import ttk
+from tkinter import messagebox  # Hata mesajları için messagebox modülünü import et
 from PIL import Image, ImageTk
 import cv2
 import numpy as np
@@ -196,23 +197,34 @@ class GoruntuIslemeUygulamasi:
         transforms_frame = Frame(self.left_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
         transforms_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        # Başlığı daha belirgin yap
-        Label(transforms_frame, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold"), 
-            fg="blue").pack(pady=5)
+        # Başlığı normal tema ile aynı yap
+        Label(transforms_frame, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
         
         # Taşıma işlemi için buton
         Button(transforms_frame, text="Görüntüyü Taşı", command=self.open_translation_dialog, 
-            width=20, bg="#d0d0ff").pack(pady=2)
+            width=20).pack(pady=2)
         
         # Aynalama işlemleri için butonlar
         Button(transforms_frame, text="X Ekseninde Aynala", command=self.flip_horizontal, 
-            width=20, bg="#d0d0ff").pack(pady=2)
+            width=20).pack(pady=2)
         Button(transforms_frame, text="Y Ekseninde Aynala", command=self.flip_vertical, 
-            width=20, bg="#d0d0ff").pack(pady=2)
+            width=20).pack(pady=2)
         
-        # Eğme (Shearing) işlemi için buton - Daha belirgin olması için farklı bir arka plan rengi verelim
+        # Eğme (Shearing) işlemi için buton
         Button(transforms_frame, text="Görüntüyü Eğ", command=self.open_shearing_dialog, 
-            width=20, bg="#ffd0d0").pack(pady=5)
+            width=20).pack(pady=2)
+            
+        # Ölçekleme (Zoom in/out) işlemi için buton
+        Button(transforms_frame, text="Görüntüyü Ölçekle", command=self.open_scaling_dialog, 
+            width=20).pack(pady=2)
+            
+        # Döndürme (Rotation) işlemi için buton
+        Button(transforms_frame, text="Görüntüyü Döndür", command=self.open_rotation_dialog, 
+            width=20).pack(pady=2)
+            
+        # Kırpma (Cropping) işlemi için buton
+        Button(transforms_frame, text="Görüntüyü Kırp", command=self.open_cropping_dialog, 
+            width=20).pack(pady=2)
         
     def open_image(self):
         """
@@ -710,6 +722,220 @@ class GoruntuIslemeUygulamasi:
         
         # Görüntüyü eğ
         self.current_image = cv2.warpAffine(self.original_image, M, (w, h))
+        self.display_image(self.current_image)
+    
+    def open_scaling_dialog(self):
+        """
+        Görüntüyü ölçeklemek (zoom in/out) için bir dialog penceresi açar.
+        Bu dialog, kullanıcının görüntüyü x ve y eksenlerinde ne oranda 
+        büyütmek veya küçültmek istediğini belirlemesini sağlar.
+        
+        Ölçekleme (scaling), görüntünün boyutunu değiştirme işlemidir.
+        """
+        if self.original_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        scaling_dialog = tk.Toplevel(self.root)
+        scaling_dialog.title("Görüntüyü Ölçekle")
+        scaling_dialog.geometry("300x200")
+        scaling_dialog.resizable(False, False)
+        
+        # X ekseninde ölçekleme için kaydırıcı
+        Label(scaling_dialog, text="X Ekseninde Ölçek:").pack(pady=5)
+        x_scale = Scale(scaling_dialog, from_=0.1, to=3.0, resolution=0.1, orient=HORIZONTAL, length=200)
+        x_scale.set(1.0)  # Başlangıç değeri: 1.0 (orijinal boyut)
+        x_scale.pack(pady=5)
+        
+        # Y ekseninde ölçekleme için kaydırıcı
+        Label(scaling_dialog, text="Y Ekseninde Ölçek:").pack(pady=5)
+        y_scale = Scale(scaling_dialog, from_=0.1, to=3.0, resolution=0.1, orient=HORIZONTAL, length=200)
+        y_scale.set(1.0)  # Başlangıç değeri: 1.0 (orijinal boyut)
+        y_scale.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_scaling():
+            sx = float(x_scale.get())  # X ölçekleme oranı
+            sy = float(y_scale.get())  # Y ölçekleme oranı
+            self.scale_image(sx, sy)
+            scaling_dialog.destroy()  # Dialog penceresini kapat
+            
+        Button(scaling_dialog, text="Uygula", command=apply_scaling).pack(pady=10)
+    
+    def scale_image(self, sx, sy):
+        """
+        Görüntüyü belirtilen oranda ölçekler (büyütür veya küçültür).
+        
+        cv2.resize: Görüntüyü yeniden boyutlandıran OpenCV fonksiyonu
+        interpolation: Yeniden boyutlandırma işleminde kullanılacak interpolasyon yöntemi
+        
+        Parametreler:
+            sx (float): X ekseninde ölçekleme oranı
+            sy (float): Y ekseninde ölçekleme oranı
+        """
+        if self.original_image is None:
+            return
+            
+        # Görüntü boyutları
+        h, w = self.original_image.shape[:2]
+        
+        # Yeni boyutları hesapla
+        new_w = int(w * sx)
+        new_h = int(h * sy)
+        
+        # Görüntüyü ölçekle (yeniden boyutlandır)
+        # Büyütme işlemi için cv2.INTER_CUBIC, küçültme işlemi için cv2.INTER_AREA önerilir
+        interpolation = cv2.INTER_CUBIC if sx > 1 or sy > 1 else cv2.INTER_AREA
+        self.current_image = cv2.resize(self.original_image, (new_w, new_h), interpolation=interpolation)
+        self.display_image(self.current_image)
+    
+    def open_rotation_dialog(self):
+        """
+        Görüntüyü döndürmek için bir dialog penceresi açar.
+        Bu dialog, kullanıcının görüntüyü belirli bir açıda döndürmesini sağlar.
+        
+        Döndürme (rotation), görüntüyü belirli bir merkez etrafında 
+        belirli bir açıda çevirme işlemidir.
+        """
+        if self.original_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        rotation_dialog = tk.Toplevel(self.root)
+        rotation_dialog.title("Görüntüyü Döndür")
+        rotation_dialog.geometry("300x150")
+        rotation_dialog.resizable(False, False)
+        
+        # Açı seçimi için kaydırıcı
+        Label(rotation_dialog, text="Döndürme Açısı (derece):").pack(pady=5)
+        angle_scale = Scale(rotation_dialog, from_=-180, to=180, orient=HORIZONTAL, length=200)
+        angle_scale.set(0)  # Başlangıç değeri: 0 (dönüş yok)
+        angle_scale.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_rotation():
+            angle = angle_scale.get()  # Döndürme açısı
+            self.rotate_image(angle)
+            rotation_dialog.destroy()  # Dialog penceresini kapat
+            
+        Button(rotation_dialog, text="Uygula", command=apply_rotation).pack(pady=10)
+    
+    def rotate_image(self, angle):
+        """
+        Görüntüyü belirtilen açıda döndürür.
+        
+        cv2.getRotationMatrix2D: Döndürme matrisi oluşturan OpenCV fonksiyonu
+        cv2.warpAffine: Görüntüye afin dönüşümü uygulayan OpenCV fonksiyonu
+        
+        Parametreler:
+            angle (int): Döndürme açısı (derece cinsinden, pozitif değerler saat yönünün tersine)
+        """
+        if self.original_image is None:
+            return
+            
+        # Görüntü boyutları
+        h, w = self.original_image.shape[:2]
+        
+        # Görüntünün merkezi
+        center = (w // 2, h // 2)
+        
+        # Döndürme matrisi oluştur (merkez, açı, ölçek)
+        # Üçüncü parametre (1.0) ölçeği belirtir (1.0 = orijinal boyut)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        
+        # Döndürülmüş görüntünün sınırlarını hesapla
+        cos = np.abs(M[0, 0])
+        sin = np.abs(M[0, 1])
+        new_w = int((h * sin) + (w * cos))
+        new_h = int((h * cos) + (w * sin))
+        
+        # Dönüşüm matrisini yeni merkeze göre ayarla
+        M[0, 2] += (new_w / 2) - center[0]
+        M[1, 2] += (new_h / 2) - center[1]
+        
+        # Görüntüyü döndür
+        self.current_image = cv2.warpAffine(self.original_image, M, (new_w, new_h))
+        self.display_image(self.current_image)
+    
+    def open_cropping_dialog(self):
+        """
+        Görüntüyü kırpmak için bir dialog penceresi açar.
+        Bu dialog, kullanıcının görüntüden kesilecek bölgeyi belirlemesini sağlar.
+        
+        Kırpma (cropping), görüntünün belirli bir bölgesini seçip 
+        geri kalan kısımlarını atma işlemidir.
+        """
+        if self.original_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        cropping_dialog = tk.Toplevel(self.root)
+        cropping_dialog.title("Görüntüyü Kırp")
+        cropping_dialog.geometry("300x300")
+        cropping_dialog.resizable(False, False)
+        
+        # Görüntü boyutları
+        h, w = self.original_image.shape[:2]
+        
+        # X başlangıç (sol kenar) için kaydırıcı
+        Label(cropping_dialog, text="Sol Kenar:").pack(pady=5)
+        x_start_scale = Scale(cropping_dialog, from_=0, to=w-10, orient=HORIZONTAL, length=200)
+        x_start_scale.set(0)  # Başlangıç değeri: 0 (sol kenar)
+        x_start_scale.pack(pady=5)
+        
+        # X bitiş (sağ kenar) için kaydırıcı
+        Label(cropping_dialog, text="Sağ Kenar:").pack(pady=5)
+        x_end_scale = Scale(cropping_dialog, from_=10, to=w, orient=HORIZONTAL, length=200)
+        x_end_scale.set(w)  # Başlangıç değeri: genişlik (sağ kenar)
+        x_end_scale.pack(pady=5)
+        
+        # Y başlangıç (üst kenar) için kaydırıcı
+        Label(cropping_dialog, text="Üst Kenar:").pack(pady=5)
+        y_start_scale = Scale(cropping_dialog, from_=0, to=h-10, orient=HORIZONTAL, length=200)
+        y_start_scale.set(0)  # Başlangıç değeri: 0 (üst kenar)
+        y_start_scale.pack(pady=5)
+        
+        # Y bitiş (alt kenar) için kaydırıcı
+        Label(cropping_dialog, text="Alt Kenar:").pack(pady=5)
+        y_end_scale = Scale(cropping_dialog, from_=10, to=h, orient=HORIZONTAL, length=200)
+        y_end_scale.set(h)  # Başlangıç değeri: yükseklik (alt kenar)
+        y_end_scale.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_cropping():
+            x_start = x_start_scale.get()
+            x_end = x_end_scale.get()
+            y_start = y_start_scale.get()
+            y_end = y_end_scale.get()
+            
+            # Geçerli bir kırpma bölgesi olduğunu kontrol et
+            if x_start >= x_end or y_start >= y_end:
+                messagebox.showerror("Hata", "Geçersiz kırpma bölgesi! Başlangıç değeri bitiş değerinden küçük olmalı.")
+                return
+                
+            self.crop_image(x_start, y_start, x_end, y_end)
+            cropping_dialog.destroy()  # Dialog penceresini kapat
+            
+        Button(cropping_dialog, text="Uygula", command=apply_cropping).pack(pady=10)
+    
+    def crop_image(self, x_start, y_start, x_end, y_end):
+        """
+        Görüntüyü belirtilen koordinatlardan kırpar.
+        
+        Numpy dizileri dilimleyerek kırpma işlemini gerçekleştirir.
+        
+        Parametreler:
+            x_start (int): Kırpılacak bölgenin sol kenarı
+            y_start (int): Kırpılacak bölgenin üst kenarı
+            x_end (int): Kırpılacak bölgenin sağ kenarı
+            y_end (int): Kırpılacak bölgenin alt kenarı
+        """
+        if self.original_image is None:
+            return
+            
+        # Görüntüyü kırp
+        # NumPy dizisi dilimleme sözdizimi: array[y_start:y_end, x_start:x_end]
+        self.current_image = self.original_image[y_start:y_end, x_start:x_end].copy()
         self.display_image(self.current_image)
 
 # Ana program başlangıcı

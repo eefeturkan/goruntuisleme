@@ -676,3 +676,137 @@ y' = d*x + e*y + f
   - Y ekseninde eğme: [1, 0, 0; sy, 1, 0]
 
 Yukarıdaki dönüşümler birleştirilerek daha karmaşık dönüşümler elde edilebilir. 
+
+=====================================================
+15. ÖLÇEKLEME, DÖNDÜRME VE KIRPMA İŞLEMLERİ
+=====================================================
+
+Ölçekleme (Scaling):
+-----------------
+Ölçekleme, bir görüntünün boyutunu değiştirme işlemidir. Görüntü büyütülebilir (zoom in)
+veya küçültülebilir (zoom out). Ölçekleme, oransal olabilir (en-boy oranı korunur)
+veya eksenler boyunca farklı oranlarda yapılabilir.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Görüntü boyutları
+h, w = img.shape[:2]
+
+# Sabit boyuta ölçekleme
+new_width = 300
+new_height = 200
+resized_img = cv2.resize(img, (new_width, new_height))
+
+# Oransal ölçekleme
+scale_factor = 0.5  # Yarı boyut
+resized_img2 = cv2.resize(img, None, fx=scale_factor, fy=scale_factor)
+
+# Farklı interpolasyon yöntemleri
+# Büyütme için INTER_CUBIC, küçültme için INTER_AREA önerilir
+enlarged_img = cv2.resize(img, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
+reduced_img = cv2.resize(img, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+```
+
+OpenCV'de kullanılan başlıca interpolasyon yöntemleri:
+- INTER_NEAREST: En yakın komşu interpolasyonu (hızlı ama düşük kaliteli)
+- INTER_LINEAR: Bilinear interpolasyon (varsayılan)
+- INTER_CUBIC: Bicubic interpolasyon (daha kaliteli ama yavaş)
+- INTER_AREA: Piksel alanı ilişkisi kullanılarak yeniden örnekleme (küçültme için en iyi)
+- INTER_LANCZOS4: Lanczos interpolasyonu (yüksek kaliteli)
+
+Döndürme (Rotation):
+-----------------
+Döndürme, görüntüyü belirli bir merkez etrafında belirli bir açıda döndürme işlemidir.
+Bu işlem, genellikle görüntünün merkezinde gerçekleştirilir, ancak herhangi bir
+nokta etrafında da döndürme yapılabilir.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Görüntü boyutları
+h, w = img.shape[:2]
+
+# Görüntünün merkezi
+center = (w // 2, h // 2)
+
+# Döndürme matrisi oluştur
+# Parametreler: merkez, açı (derece), ölçek
+angle = 45  # 45 derece saat yönünün tersine
+scale = 1.0  # Orijinal boyut
+rotation_matrix = cv2.getRotationMatrix2D(center, angle, scale)
+
+# Görüntüyü döndür
+rotated_img = cv2.warpAffine(img, rotation_matrix, (w, h))
+
+# Döndürülmüş görüntünün tamamını göstermek için yeni boyutları hesapla
+# (Döndürme sırasında görüntünün köşeleri kesilerek kaybolabilir)
+cos = np.abs(rotation_matrix[0, 0])
+sin = np.abs(rotation_matrix[0, 1])
+new_w = int((h * sin) + (w * cos))
+new_h = int((h * cos) + (w * sin))
+
+# Dönüşüm matrisini yeni merkeze göre ayarla
+rotation_matrix[0, 2] += (new_w / 2) - center[0]
+rotation_matrix[1, 2] += (new_h / 2) - center[1]
+
+# Genişletilmiş boyutla döndür
+rotated_img_full = cv2.warpAffine(img, rotation_matrix, (new_w, new_h))
+```
+
+Döndürme matrisi şu formüllere göre hesaplanır:
+- x' = x * cos(θ) - y * sin(θ)
+- y' = x * sin(θ) + y * cos(θ)
+
+Burada θ, döndürme açısıdır (derece cinsinden).
+
+Kırpma (Cropping):
+--------------
+Kırpma, görüntünün belirli bir bölgesini seçip geri kalan kısımları atma işlemidir.
+Bu işlem, NumPy dizilerinin dilimleme özelliği kullanılarak kolayca gerçekleştirilebilir.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Görüntü boyutları
+h, w = img.shape[:2]
+
+# Kırpma koordinatları
+x_start = 100  # Sol kenar
+y_start = 50   # Üst kenar
+x_end = 300    # Sağ kenar
+y_end = 200    # Alt kenar
+
+# Görüntüyü kırp
+# NumPy dizi dilimleme: array[y_start:y_end, x_start:x_end]
+cropped_img = img[y_start:y_end, x_start:x_end]
+
+# Görüntünün merkezini kırpmak için
+center_x, center_y = w // 2, h // 2
+size = 100  # Kırpılacak kare bölgenin yarı boyutu
+center_crop = img[center_y-size:center_y+size, center_x-size:center_x+size]
+```
+
+Kırpma işlemi, görüntü işlemede sıkça kullanılan bir tekniktir. Örneğin:
+- Görüntüdeki ilgilenilen bölgeyi (ROI - Region of Interest) ayırmak
+- Görüntüyü belirli bir en-boy oranına getirmek
+- Görüntüdeki gereksiz kısımları atmak
+- Veri hazırlama aşamasında görüntüleri standart boyutlara getirmek
+
+Görüntüler üzerinde bu dönüşümleri uygulayarak, farklı görüntü işleme ve
+bilgisayarlı görü uygulamaları için gerekli olan ön işlemeleri gerçekleştirebiliriz. 
