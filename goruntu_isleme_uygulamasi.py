@@ -52,7 +52,7 @@ class GoruntuIslemeUygulamasi:
         # Ana pencereyi sınıf değişkeni olarak saklıyoruz
         self.root = root
         self.root.title("Görüntü İşleme Uygulaması")
-        self.root.geometry("1200x800")  # Pencerenin boyutunu ayarlıyoruz
+        self.root.geometry("1280x900")  # Pencerenin boyutunu artırıyoruz
         self.root.configure(bg="#f0f0f0")  # Arka plan rengini ayarlıyoruz
         
         # Ana görüntü değişkenleri - bunlar sınıf içinde her yerden erişilebilir değişkenlerdir
@@ -75,9 +75,26 @@ class GoruntuIslemeUygulamasi:
         # Frame: Diğer bileşenleri gruplamak için kullanılan konteyner
         # relief: Çerçeve kenarlığının görünümü (RIDGE, SUNKEN, RAISED vb.)
         # borderwidth: Kenarlık kalınlığı
-        self.left_frame = Frame(self.root, width=300, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
-        self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         
+        # Sol panel için bir canvas ve scrollbar oluşturuyoruz
+        self.left_outer_frame = Frame(self.root, width=300, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
+        self.left_outer_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+        
+        # Sol panele kaydırma çubuğu ekle
+        self.left_scrollbar = tk.Scrollbar(self.left_outer_frame, orient="vertical")
+        self.left_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Canvas oluştur ve scrollbar'a bağla
+        self.left_canvas = tk.Canvas(self.left_outer_frame, bg="#e0e0e0", 
+                                   yscrollcommand=self.left_scrollbar.set)
+        self.left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.left_scrollbar.config(command=self.left_canvas.yview)
+        
+        # Canvas içine konulacak frame oluştur
+        self.left_frame = Frame(self.left_canvas, bg="#e0e0e0")
+        self.left_canvas.create_window((0, 0), window=self.left_frame, anchor="nw")
+        
+        # Sağ çerçeve oluştur
         self.right_frame = Frame(self.root, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
         self.right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -95,6 +112,11 @@ class GoruntuIslemeUygulamasi:
         
         # Kontrol butonları - Sol paneldeki tüm butonları oluşturan metodu çağırıyoruz
         self.create_control_buttons()
+        
+        # Sol panelin boyutlarını güncelle
+        self.left_frame.update_idletasks()
+        self.left_canvas.config(scrollregion=self.left_canvas.bbox("all"))
+        self.left_canvas.config(width=280, height=700)  # Canvas boyutlarını ayarla
         
     def create_control_buttons(self):
         """
@@ -174,17 +196,23 @@ class GoruntuIslemeUygulamasi:
         transforms_frame = Frame(self.left_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
         transforms_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        Label(transforms_frame, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        # Başlığı daha belirgin yap
+        Label(transforms_frame, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold"), 
+            fg="blue").pack(pady=5)
         
         # Taşıma işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Taşı", command=self.open_translation_dialog, width=20).pack(pady=2)
+        Button(transforms_frame, text="Görüntüyü Taşı", command=self.open_translation_dialog, 
+            width=20, bg="#d0d0ff").pack(pady=2)
         
         # Aynalama işlemleri için butonlar
-        Button(transforms_frame, text="X Ekseninde Aynala", command=self.flip_horizontal, width=20).pack(pady=2)
-        Button(transforms_frame, text="Y Ekseninde Aynala", command=self.flip_vertical, width=20).pack(pady=2)
+        Button(transforms_frame, text="X Ekseninde Aynala", command=self.flip_horizontal, 
+            width=20, bg="#d0d0ff").pack(pady=2)
+        Button(transforms_frame, text="Y Ekseninde Aynala", command=self.flip_vertical, 
+            width=20, bg="#d0d0ff").pack(pady=2)
         
-        # Eğme (Shearing) işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Eğ", command=self.open_shearing_dialog, width=20).pack(pady=2)
+        # Eğme (Shearing) işlemi için buton - Daha belirgin olması için farklı bir arka plan rengi verelim
+        Button(transforms_frame, text="Görüntüyü Eğ", command=self.open_shearing_dialog, 
+            width=20, bg="#ffd0d0").pack(pady=5)
         
     def open_image(self):
         """
