@@ -1,0 +1,678 @@
+=====================================================
+GÖRÜNTÜ İŞLEME TEMELLERİ VE ÖRNEK KODLAR
+=====================================================
+
+Bu dosya, görüntü işleme işlemlerinin ne olduğunu ve nasıl uygulandığını
+basit bir şekilde açıklamaktadır. Her bir işlem için temel açıklama ve
+Python ile OpenCV kullanarak nasıl uygulanacağına dair örnek kod parçaları
+bulunmaktadır.
+
+=====================================================
+1. GÖRÜNTÜ OKUMA VE KAYDETME
+=====================================================
+
+Görüntü Okuma:
+--------------
+OpenCV ile bir görüntü dosyasını okumak için cv2.imread() fonksiyonu kullanılır.
+OpenCV görüntüleri BGR (Mavi-Yeşil-Kırmızı) formatında okur.
+
+Örnek Kod:
+```python
+import cv2
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+# BGR'den RGB'ye dönüştür (çoğu uygulama RGB kullanır)
+img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+```
+
+Görüntü Kaydetme:
+----------------
+Bir görüntüyü dosyaya kaydetmek için cv2.imwrite() fonksiyonu kullanılır.
+
+Örnek Kod:
+```python
+import cv2
+# Görüntüyü kaydet
+cv2.imwrite("yeni_resim.jpg", img)
+```
+
+=====================================================
+2. GRİ TONLAMAYA ÇEVİRME
+=====================================================
+
+Renkli bir görüntüyü gri tonlamalı hale getirmek için cv2.cvtColor() fonksiyonu
+ve COLOR_BGR2GRAY veya COLOR_RGB2GRAY sabiti kullanılır.
+
+Gri tonlama, her pikselin renk bilgisini (R,G,B) tek bir yoğunluk değerine
+dönüştürür. Bu dönüşüm genellikle şu formülle yapılır:
+Gri = 0.299*R + 0.587*G + 0.114*B
+
+Bu ağırlıklar, insan gözünün farklı renklere olan duyarlılığını yansıtır.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Renkli görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Gri tonlamaya çevir
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Manuel olarak gri tonlamaya çevirmek istersek:
+# (Bu, OpenCV'nin yaptığı işlemin basitleştirilmiş halidir)
+b, g, r = cv2.split(img)  # Kanalları ayır
+gray_manual = np.round(0.299 * r + 0.587 * g + 0.114 * b).astype(np.uint8)
+```
+
+=====================================================
+3. NEGATİF ALMA
+=====================================================
+
+Bir görüntünün negatifini almak, her piksel değerini 255'ten çıkararak
+elde edilir. Bu işlem, görüntüdeki renkleri tersine çevirir:
+siyah beyaz olur, beyaz siyah olur.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Negatifini al
+negative_img = 255 - img
+
+# Alternatif olarak:
+negative_img2 = cv2.bitwise_not(img)
+```
+
+=====================================================
+4. RGB KANALLARA AYIRMA
+=====================================================
+
+Renkli bir görüntü, Kırmızı (R), Yeşil (G) ve Mavi (B) olmak üzere
+üç renk kanalından oluşur. Bu kanalları ayırmak için cv2.split() fonksiyonu kullanılır.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# BGR kanallarına ayır (OpenCV BGR formatı kullanır)
+b, g, r = cv2.split(img)
+
+# Her kanalı ayrı ayrı göstermek için:
+# Boş (sıfır) görüntüler oluştur
+zeros = np.zeros_like(b)
+
+# Sadece R kanalını içeren görüntü
+r_channel = cv2.merge([zeros, zeros, r])  # BGR formatında
+
+# Sadece G kanalını içeren görüntü
+g_channel = cv2.merge([zeros, g, zeros])  # BGR formatında
+
+# Sadece B kanalını içeren görüntü
+b_channel = cv2.merge([b, zeros, zeros])  # BGR formatında
+```
+
+=====================================================
+5. PARLAKLIK AYARLAMA
+=====================================================
+
+Parlaklık ayarlamak, görüntüdeki her piksele sabit bir değer ekleyerek
+veya çıkararak yapılır. Pozitif değerler parlaklığı artırır, negatif
+değerler azaltır.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Parlaklığı artır (50 birim)
+brightness = 50
+brightened_img = cv2.add(img, np.ones_like(img) * brightness)
+
+# Parlaklığı azalt (50 birim)
+brightness = -50
+darkened_img = cv2.add(img, np.ones_like(img) * brightness)
+
+# Alternatif yöntem:
+# alpha: kontrast, beta: parlaklık
+alpha = 1.0  # Kontrast değişmez
+beta = 50    # Parlaklık artar
+brightened_img2 = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+```
+
+=====================================================
+6. EŞİKLEME (THRESHOLDING)
+=====================================================
+
+Eşikleme, piksel değerlerini belirli bir eşik değerine göre ikiye ayırır.
+Eşik değerinden büyük pikseller beyaz (255), küçük olanlar siyah (0) olur.
+Bu işlem genellikle gri tonlamalı görüntüler üzerinde uygulanır.
+
+Örnek Kod:
+```python
+import cv2
+
+# Görüntüyü oku ve gri tonlamaya çevir
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Basit eşikleme uygula
+threshold_value = 127  # Eşik değeri (0-255 arası)
+max_value = 255       # Eşik üstü değer
+_, binary_img = cv2.threshold(gray_img, threshold_value, max_value, cv2.THRESH_BINARY)
+
+# Diğer eşikleme türleri:
+# cv2.THRESH_BINARY_INV: Ters ikili eşikleme
+# cv2.THRESH_TRUNC: Kesme eşiklemesi
+# cv2.THRESH_TOZERO: Sıfıra eşikleme
+# cv2.THRESH_TOZERO_INV: Ters sıfıra eşikleme
+
+# Otsu yöntemi ile otomatik eşik değeri belirleme
+_, otsu_img = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+```
+
+=====================================================
+7. HİSTOGRAM HESAPLAMA
+=====================================================
+
+Histogram, bir görüntüdeki piksel yoğunluklarının dağılımını gösterir.
+Gri tonlamalı bir görüntü için 0-255 arası değerlerin dağılımını,
+renkli bir görüntü için her renk kanalının ayrı histogramını gösterir.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Görüntüyü oku ve gri tonlamaya çevir
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Gri tonlamalı görüntünün histogramını hesapla
+hist = cv2.calcHist([gray_img], [0], None, [256], [0, 256])
+
+# Histogramı çiz
+plt.figure()
+plt.title("Gri Tonlama Histogramı")
+plt.xlabel("Piksel Değeri")
+plt.ylabel("Piksel Sayısı")
+plt.plot(hist)
+plt.xlim([0, 256])
+plt.show()
+
+# Renkli görüntünün histogramını hesapla
+colors = ('b', 'g', 'r')
+plt.figure()
+plt.title("RGB Histogramı")
+plt.xlabel("Piksel Değeri")
+plt.ylabel("Piksel Sayısı")
+
+for i, color in enumerate(colors):
+    hist = cv2.calcHist([img], [i], None, [256], [0, 256])
+    plt.plot(hist, color=color)
+
+plt.xlim([0, 256])
+plt.show()
+```
+
+=====================================================
+8. HİSTOGRAM EŞİTLEME
+=====================================================
+
+Histogram eşitleme, bir görüntünün kontrastını iyileştirmek için kullanılır.
+Bu işlem, piksel değerlerinin dağılımını daha geniş bir aralığa yayarak
+görüntüdeki detayları daha görünür hale getirir.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Görüntüyü oku ve gri tonlamaya çevir
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Histogram eşitleme uygula
+equalized_img = cv2.equalizeHist(gray_img)
+
+# Orijinal ve eşitlenmiş histogramları karşılaştır
+hist_original = cv2.calcHist([gray_img], [0], None, [256], [0, 256])
+hist_equalized = cv2.calcHist([equalized_img], [0], None, [256], [0, 256])
+
+plt.figure(figsize=(10, 5))
+plt.subplot(121)
+plt.title("Orijinal Histogram")
+plt.plot(hist_original)
+plt.xlim([0, 256])
+
+plt.subplot(122)
+plt.title("Eşitlenmiş Histogram")
+plt.plot(hist_equalized)
+plt.xlim([0, 256])
+plt.show()
+
+# Renkli görüntüler için histogram eşitleme
+# Her kanalı ayrı ayrı eşitlemek gerekir
+img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+r, g, b = cv2.split(img_rgb)
+
+r_eq = cv2.equalizeHist(r)
+g_eq = cv2.equalizeHist(g)
+b_eq = cv2.equalizeHist(b)
+
+img_eq = cv2.merge([r_eq, g_eq, b_eq])
+```
+
+=====================================================
+9. KONTRAST AYARLAMA
+=====================================================
+
+Kontrast, görüntüdeki açık ve koyu bölgeler arasındaki farkı ifade eder.
+Kontrast ayarlamak için piksel değerleri bir katsayı ile çarpılır.
+1.0'dan büyük katsayılar kontrastı artırır, küçük katsayılar azaltır.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Kontrastı artır (2.0 kat)
+contrast = 2.0
+contrasted_img = cv2.convertScaleAbs(img, alpha=contrast, beta=0)
+
+# Kontrastı azalt (0.5 kat)
+contrast = 0.5
+low_contrast_img = cv2.convertScaleAbs(img, alpha=contrast, beta=0)
+
+# Kontrast ve parlaklığı birlikte ayarla
+alpha = 1.5  # Kontrast
+beta = 30    # Parlaklık
+adjusted_img = cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
+```
+
+=====================================================
+10. TEMEL GÖRÜNTÜ İŞLEME KAVRAMLARI
+=====================================================
+
+Piksel:
+-------
+Görüntünün en küçük birimidir. Her piksel, gri tonlamalı görüntülerde
+bir yoğunluk değeri (0-255), renkli görüntülerde ise üç renk değeri (R,G,B)
+içerir.
+
+NumPy Dizisi Olarak Görüntüler:
+------------------------------
+OpenCV'de görüntüler NumPy dizileri olarak temsil edilir:
+- Gri tonlamalı görüntü: 2 boyutlu dizi (yükseklik, genişlik)
+- Renkli görüntü: 3 boyutlu dizi (yükseklik, genişlik, kanal)
+
+Örnek:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Görüntü boyutları
+height, width, channels = img.shape
+print(f"Yükseklik: {height}, Genişlik: {width}, Kanal Sayısı: {channels}")
+
+# Belirli bir pikselin değerini al (y, x koordinatları)
+y, x = 100, 150
+pixel_value = img[y, x]
+print(f"({x}, {y}) koordinatındaki piksel değeri: {pixel_value}")  # [B, G, R]
+
+# Belirli bir pikselin değerini değiştir
+img[y, x] = [0, 0, 255]  # Kırmızı piksel (BGR formatında)
+```
+
+Görüntü Döndürme:
+----------------
+```python
+import cv2
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# 90 derece saat yönünde döndür
+rotated_90_cw = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+
+# 180 derece döndür
+rotated_180 = cv2.rotate(img, cv2.ROTATE_180)
+
+# 90 derece saat yönünün tersine döndür
+rotated_90_ccw = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+```
+
+Görüntü Yeniden Boyutlandırma:
+-----------------------------
+```python
+import cv2
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Belirli bir boyuta yeniden boyutlandır
+resized_img = cv2.resize(img, (300, 200))  # (genişlik, yükseklik)
+
+# Oranları koruyarak yeniden boyutlandır
+scale_percent = 50  # orijinal boyutun %50'si
+width = int(img.shape[1] * scale_percent / 100)
+height = int(img.shape[0] * scale_percent / 100)
+resized_img2 = cv2.resize(img, (width, height))
+```
+
+=====================================================
+11. GÖRÜNTÜ FİLTRELEME (BULANIKLAŞTIRMA)
+=====================================================
+
+Bulanıklaştırma (Blurring), görüntüdeki gürültüyü azaltmak veya
+detayları yumuşatmak için kullanılır.
+
+Gaussian Bulanıklaştırma:
+------------------------
+```python
+import cv2
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Gaussian bulanıklaştırma uygula
+# (5,5) filtre boyutu, sigma=0 otomatik hesaplanır
+blurred_img = cv2.GaussianBlur(img, (5, 5), 0)
+```
+
+Ortalama (Mean) Bulanıklaştırma:
+-------------------------------
+```python
+import cv2
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Ortalama bulanıklaştırma uygula
+# (5,5) filtre boyutu
+blurred_img = cv2.blur(img, (5, 5))
+```
+
+Medyan Bulanıklaştırma:
+----------------------
+```python
+import cv2
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Medyan bulanıklaştırma uygula
+# 5: filtre boyutu
+blurred_img = cv2.medianBlur(img, 5)
+```
+
+=====================================================
+12. KENAR TESPİTİ
+=====================================================
+
+Kenar tespiti, görüntüdeki nesnelerin sınırlarını bulmak için kullanılır.
+
+Canny Kenar Tespiti:
+------------------
+```python
+import cv2
+
+# Görüntüyü oku ve gri tonlamaya çevir
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Canny kenar tespiti uygula
+# 100: alt eşik, 200: üst eşik
+edges = cv2.Canny(gray_img, 100, 200)
+```
+
+Sobel Kenar Tespiti:
+------------------
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku ve gri tonlamaya çevir
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Sobel kenar tespiti uygula
+# x yönündeki gradyan
+sobelx = cv2.Sobel(gray_img, cv2.CV_64F, 1, 0, ksize=5)
+# y yönündeki gradyan
+sobely = cv2.Sobel(gray_img, cv2.CV_64F, 0, 1, ksize=5)
+
+# Gradyanların mutlak değerini al
+sobelx = np.absolute(sobelx)
+sobely = np.absolute(sobely)
+
+# Gradyanları birleştir
+sobel_combined = cv2.addWeighted(sobelx, 0.5, sobely, 0.5, 0)
+```
+
+=====================================================
+13. MORFOLOJİK İŞLEMLER
+=====================================================
+
+Morfolojik işlemler, görüntüdeki şekilleri değiştirmek için kullanılır.
+Genellikle ikili (binary) görüntüler üzerinde uygulanır.
+
+Genişletme (Dilation):
+--------------------
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku, gri tonlamaya çevir ve eşikle
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+_, binary_img = cv2.threshold(gray_img, 127, 255, cv2.THRESH_BINARY)
+
+# Yapılandırma elemanı oluştur
+kernel = np.ones((5, 5), np.uint8)
+
+# Genişletme uygula
+dilated_img = cv2.dilate(binary_img, kernel, iterations=1)
+```
+
+Aşındırma (Erosion):
+------------------
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku, gri tonlamaya çevir ve eşikle
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+_, binary_img = cv2.threshold(gray_img, 127, 255, cv2.THRESH_BINARY)
+
+# Yapılandırma elemanı oluştur
+kernel = np.ones((5, 5), np.uint8)
+
+# Aşındırma uygula
+eroded_img = cv2.erode(binary_img, kernel, iterations=1)
+```
+
+Açma (Opening):
+-------------
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku, gri tonlamaya çevir ve eşikle
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+_, binary_img = cv2.threshold(gray_img, 127, 255, cv2.THRESH_BINARY)
+
+# Yapılandırma elemanı oluştur
+kernel = np.ones((5, 5), np.uint8)
+
+# Açma uygula (önce aşındırma, sonra genişletme)
+opening_img = cv2.morphologyEx(binary_img, cv2.MORPH_OPEN, kernel)
+```
+
+Kapama (Closing):
+--------------
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku, gri tonlamaya çevir ve eşikle
+img = cv2.imread("resim.jpg")
+gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+_, binary_img = cv2.threshold(gray_img, 127, 255, cv2.THRESH_BINARY)
+
+# Yapılandırma elemanı oluştur
+kernel = np.ones((5, 5), np.uint8)
+
+# Kapama uygula (önce genişletme, sonra aşındırma)
+closing_img = cv2.morphologyEx(binary_img, cv2.MORPH_CLOSE, kernel)
+```
+
+=====================================================
+14. GÖRÜNTÜ DÖNÜŞÜM İŞLEMLERİ
+=====================================================
+
+Görüntü dönüşüm işlemleri, görüntünün uzaysal (spatial) özelliklerini değiştiren
+işlemlerdir. Temel görüntü dönüşüm işlemleri arasında taşıma (translation),
+aynalama (flipping/mirroring) ve eğme (shearing) bulunur.
+
+Taşıma (Translation):
+-------------------
+Görüntüyü x ve y eksenlerinde belirli bir miktar kaydırma işlemidir.
+Bu işlem, bütün pikselleri aynı anda aynı miktarda ve aynı yönde hareket ettirir.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Taşıma parametreleri: x ve y yönünde piksel cinsinden
+tx, ty = 50, 30  # x yönünde 50 piksel, y yönünde 30 piksel
+
+# Taşıma matrisi oluştur
+M = np.float32([[1, 0, tx], [0, 1, ty]])
+
+# Görüntü boyutları
+h, w = img.shape[:2]
+
+# Taşıma işlemini uygula
+translated_img = cv2.warpAffine(img, M, (w, h))
+```
+
+Taşıma matrisi [1, 0, tx; 0, 1, ty] şeklindedir. Bu matris, her pikseli
+x ekseninde tx kadar, y ekseninde ty kadar kaydırır.
+
+Aynalama (Flipping/Mirroring):
+----------------------------
+Görüntüyü belirli bir eksen etrafında ters çevirme işlemidir.
+Yatay aynalama (x eksenine göre), dikey aynalama (y eksenine göre)
+ve her iki eksene göre aynalama yapılabilir.
+
+Örnek Kod:
+```python
+import cv2
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Yatay aynalama (soldan sağa ters çevirme)
+horizontal_flip = cv2.flip(img, 1)  # flipCode = 1
+
+# Dikey aynalama (yukarıdan aşağıya ters çevirme)
+vertical_flip = cv2.flip(img, 0)    # flipCode = 0
+
+# Her iki eksene göre aynalama (hem yatay hem dikey)
+both_flip = cv2.flip(img, -1)       # flipCode = -1
+```
+
+OpenCV'de flip fonksiyonu üç farklı flipCode değeri alır:
+  - flipCode = 1: Yatay aynalama (x eksenine göre)
+  - flipCode = 0: Dikey aynalama (y eksenine göre)
+  - flipCode = -1: Her iki eksene göre aynalama
+
+Eğme (Shearing):
+--------------
+Eğme, görüntünün bir tarafını sabit tutarken diğer tarafını
+kaydırma işlemidir. Bu işlem, görüntüyü parallelogram (paralelkenar)
+şekline dönüştürür.
+
+X ekseninde eğme, görüntüyü yatay yönde eğerken;
+Y ekseninde eğme, görüntüyü dikey yönde eğer.
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("resim.jpg")
+
+# Görüntü boyutları
+h, w = img.shape[:2]
+
+# X ekseninde eğme (yatay eğme)
+sx = 0.5  # Eğme faktörü (pozitif değer sağa, negatif değer sola eğer)
+M_x = np.float32([[1, sx, 0], [0, 1, 0]])
+x_sheared = cv2.warpAffine(img, M_x, (w, h))
+
+# Y ekseninde eğme (dikey eğme)
+sy = 0.5  # Eğme faktörü (pozitif değer aşağıya, negatif değer yukarıya eğer)
+M_y = np.float32([[1, 0, 0], [sy, 1, 0]])
+y_sheared = cv2.warpAffine(img, M_y, (w, h))
+
+# Hem X hem Y ekseninde eğme
+M_xy = np.float32([[1, sx, 0], [sy, 1, 0]])
+xy_sheared = cv2.warpAffine(img, M_xy, (w, h))
+```
+
+Eğme matrisleri:
+  - X ekseninde eğme: [1, sx, 0; 0, 1, 0]
+  - Y ekseninde eğme: [1, 0, 0; sy, 1, 0]
+  - Her iki eksende eğme: [1, sx, 0; sy, 1, 0]
+
+Burada sx ve sy eğme faktörleridir. Değerleri genellikle -1.0 ile 1.0 arasındadır.
+
+Afin Dönüşüm Matrisi:
+------------------
+Taşıma, ölçeklendirme, döndürme ve eğme gibi geometrik dönüşümler,
+afin dönüşüm matrisi kullanılarak ifade edilebilir.
+
+2x3 boyutundaki afin dönüşüm matrisi şu şekildedir:
+[a, b, c; d, e, f]
+
+Bu matris, aşağıdaki dönüşümleri uygular:
+x' = a*x + b*y + c
+y' = d*x + e*y + f
+
+Özel durumlar:
+  - Taşıma: [1, 0, tx; 0, 1, ty]
+  - Ölçeklendirme: [sx, 0, 0; 0, sy, 0]
+  - Döndürme (θ açısı): [cos(θ), -sin(θ), 0; sin(θ), cos(θ), 0]
+  - X ekseninde eğme: [1, sx, 0; 0, 1, 0]
+  - Y ekseninde eğme: [1, 0, 0; sy, 1, 0]
+
+Yukarıdaki dönüşümler birleştirilerek daha karmaşık dönüşümler elde edilebilir. 
