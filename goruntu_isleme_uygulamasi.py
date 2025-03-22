@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, Scale, Label, Button, Frame, HORIZONTAL, RIDGE, SUNKEN, RAISED
+from tkinter import filedialog, Scale, Label, Button, Frame, HORIZONTAL, RIDGE, SUNKEN, RAISED, LEFT
 from tkinter import ttk
 from tkinter import messagebox  # Hata mesajları için messagebox modülünü import et
 from PIL import Image, ImageTk
@@ -871,35 +871,43 @@ class GoruntuIslemeUygulamasi:
         # Yeni bir dialog penceresi oluştur
         cropping_dialog = tk.Toplevel(self.root)
         cropping_dialog.title("Görüntüyü Kırp")
-        cropping_dialog.geometry("300x300")
+        cropping_dialog.geometry("350x450")  # Pencere boyutunu artır
         cropping_dialog.resizable(False, False)
+        
+        # Ana frame oluştur
+        main_frame = Frame(cropping_dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Görüntü boyutları
         h, w = self.original_image.shape[:2]
         
         # X başlangıç (sol kenar) için kaydırıcı
-        Label(cropping_dialog, text="Sol Kenar:").pack(pady=5)
-        x_start_scale = Scale(cropping_dialog, from_=0, to=w-10, orient=HORIZONTAL, length=200)
+        Label(main_frame, text="Sol Kenar:").pack(pady=5)
+        x_start_scale = Scale(main_frame, from_=0, to=w-10, orient=HORIZONTAL, length=300)
         x_start_scale.set(0)  # Başlangıç değeri: 0 (sol kenar)
         x_start_scale.pack(pady=5)
         
         # X bitiş (sağ kenar) için kaydırıcı
-        Label(cropping_dialog, text="Sağ Kenar:").pack(pady=5)
-        x_end_scale = Scale(cropping_dialog, from_=10, to=w, orient=HORIZONTAL, length=200)
+        Label(main_frame, text="Sağ Kenar:").pack(pady=5)
+        x_end_scale = Scale(main_frame, from_=10, to=w, orient=HORIZONTAL, length=300)
         x_end_scale.set(w)  # Başlangıç değeri: genişlik (sağ kenar)
         x_end_scale.pack(pady=5)
         
         # Y başlangıç (üst kenar) için kaydırıcı
-        Label(cropping_dialog, text="Üst Kenar:").pack(pady=5)
-        y_start_scale = Scale(cropping_dialog, from_=0, to=h-10, orient=HORIZONTAL, length=200)
+        Label(main_frame, text="Üst Kenar:").pack(pady=5)
+        y_start_scale = Scale(main_frame, from_=0, to=h-10, orient=HORIZONTAL, length=300)
         y_start_scale.set(0)  # Başlangıç değeri: 0 (üst kenar)
         y_start_scale.pack(pady=5)
         
         # Y bitiş (alt kenar) için kaydırıcı
-        Label(cropping_dialog, text="Alt Kenar:").pack(pady=5)
-        y_end_scale = Scale(cropping_dialog, from_=10, to=h, orient=HORIZONTAL, length=200)
+        Label(main_frame, text="Alt Kenar:").pack(pady=5)
+        y_end_scale = Scale(main_frame, from_=10, to=h, orient=HORIZONTAL, length=300)
         y_end_scale.set(h)  # Başlangıç değeri: yükseklik (alt kenar)
         y_end_scale.pack(pady=5)
+        
+        # Buton çerçevesi
+        button_frame = Frame(main_frame)
+        button_frame.pack(pady=20)
         
         # Uygula butonu
         def apply_cropping():
@@ -915,8 +923,10 @@ class GoruntuIslemeUygulamasi:
                 
             self.crop_image(x_start, y_start, x_end, y_end)
             cropping_dialog.destroy()  # Dialog penceresini kapat
-            
-        Button(cropping_dialog, text="Uygula", command=apply_cropping).pack(pady=10)
+        
+        # İptal ve Uygula butonları    
+        Button(button_frame, text="İptal", command=cropping_dialog.destroy, width=10).pack(side=LEFT, padx=5)
+        Button(button_frame, text="Uygula", command=apply_cropping, width=10).pack(side=LEFT, padx=5)
     
     def crop_image(self, x_start, y_start, x_end, y_end):
         """
