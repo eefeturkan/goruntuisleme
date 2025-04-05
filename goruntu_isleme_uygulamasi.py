@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, Scale, Label, Button, Frame, HORIZONTAL, RIDGE, SUNKEN, RAISED, LEFT
+from tkinter import filedialog, Scale, Label, Button, Frame, HORIZONTAL, RIDGE, SUNKEN, RAISED, LEFT, RIGHT
 from tkinter import ttk
 from tkinter import messagebox  # Hata mesajları için messagebox modülünü import et
 from PIL import Image, ImageTk
