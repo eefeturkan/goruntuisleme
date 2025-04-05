@@ -810,3 +810,135 @@ Kırpma işlemi, görüntü işlemede sıkça kullanılan bir tekniktir. Örneğ
 
 Görüntüler üzerinde bu dönüşümleri uygulayarak, farklı görüntü işleme ve
 bilgisayarlı görü uygulamaları için gerekli olan ön işlemeleri gerçekleştirebiliriz. 
+
+=====================================================
+16. PERSPEKTİF DÖNÜŞÜMÜ
+=====================================================
+
+Perspektif dönüşümü, bir görüntünün perspektif açısını değiştiren bir dönüşüm türüdür.
+Bu dönüşüm, genellikle eğik açıdan çekilmiş görüntüleri düzeltmek veya görüntüdeki
+belirli bir bölgeyi (örneğin bir belge, poster veya ekran) düz bir görünüme dönüştürmek
+için kullanılır.
+
+Matematiksek olarak, perspektif dönüşüm 3x3 boyutunda bir dönüşüm matrisi
+kullanarak gerçekleştirilir. Bu matris, bir düzlemdeki 4 noktanın başka bir düzlemdeki
+4 noktaya dönüşümünü tanımlar. Dönüşüm matrisi için en az 4 nokta çifti gereklidir
+(kaynak ve hedef noktaları).
+
+Perspektif Dönüşüm İşlemi Adımları:
+-----------------------------------
+1. Kaynak görüntüde 4 nokta seçin (genellikle düzeltmek istediğiniz bölgenin 4 köşesi)
+2. Bu 4 noktanın dönüştürüleceği hedef koordinatları belirleyin (genellikle bir dikdörtgen)
+3. Perspektif dönüşüm matrisini hesaplayın
+4. Dönüşüm matrisini kullanarak görüntüyü dönüştürün
+
+Örnek Kod:
+```python
+import cv2
+import numpy as np
+
+# Görüntüyü oku
+img = cv2.imread("egri_belge.jpg")
+
+# Kaynak noktalar - görüntüde seçilen 4 nokta
+# Bu noktalar, düzeltmek istediğimiz bölgenin köşeleridir
+pts1 = np.float32([
+    [73, 239],   # Sol üst
+    [356, 117],  # Sağ üst
+    [144, 482],  # Sol alt
+    [434, 360]   # Sağ alt
+])
+
+# Hedef noktalar - düzeltilmiş görüntüdeki köşeler
+# Genellikle standart bir dikdörtgen oluşturulur
+width, height = 300, 400
+pts2 = np.float32([
+    [0, 0],          # Sol üst
+    [width, 0],      # Sağ üst
+    [0, height],     # Sol alt
+    [width, height]  # Sağ alt
+])
+
+# Perspektif dönüşüm matrisini hesapla
+matrix = cv2.getPerspectiveTransform(pts1, pts2)
+
+# Perspektif dönüşümünü uygula
+result = cv2.warpPerspective(img, matrix, (width, height))
+```
+
+Kullanıcı Etkileşimli Perspektif Düzeltme:
+-----------------------------------------
+Kullanıcının görüntü üzerinde 4 noktayı interaktif olarak seçmesini sağlayarak
+daha esnek bir perspektif düzeltme işlemi gerçekleştirilebilir. Bu yaklaşım,
+özellikle farklı uygulamalar için farklı bölgeleri düzeltmek istediğinizde kullanışlıdır.
+
+```python
+import cv2
+import numpy as np
+
+# Seçilen noktaları saklayacak liste
+selected_points = []
+
+def select_points(event, x, y, flags, param):
+    """ Fare tıklamalarını kaydeden fonksiyon """
+    global selected_points
+    if event == cv2.EVENT_LBUTTONDOWN:
+        selected_points.append((x, y))
+        print(f"Nokta Seçildi: {x}, {y}")
+        
+        # Noktayı görüntü üzerinde göster
+        cv2.circle(img_copy, (x, y), 5, (0, 0, 255), -1)
+        cv2.imshow("Görüntü - 4 Nokta Seçin", img_copy)
+        
+        if len(selected_points) == 4:
+            cv2.waitKey(500)  # Kısa bir bekleme
+            cv2.destroyAllWindows()
+
+# Görüntüyü yükle
+img = cv2.imread("egri_belge.jpg")
+img_copy = img.copy()
+
+# Görüntüyü göster
+cv2.imshow("Görüntü - 4 Nokta Seçin", img_copy)
+
+# Mouse callback fonksiyonunu bağla
+cv2.setMouseCallback("Görüntü - 4 Nokta Seçin", select_points)
+
+# Kullanıcı 4 nokta seçene kadar bekle
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# Kullanıcının seçtiği noktaları numpy array'e çevir
+if len(selected_points) == 4:
+    pts1 = np.float32(selected_points)
+    
+    # Düzeltme sonrası köşeleri belirle
+    width, height = 500, 600
+    pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
+    
+    # Perspektif dönüşüm matrisini hesapla
+    matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    
+    # Perspektif dönüşümünü uygula
+    result = cv2.warpPerspective(img, matrix, (width, height))
+    
+    # Sonucu göster
+    cv2.imshow("Perspektif Düzeltilmiş Görüntü", result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+```
+
+Perspektif Dönüşümün Kullanım Alanları:
+-------------------------------------
+1. Belge tarama ve düzeltme
+2. Plaka tanıma sistemleri
+3. Yüz tanıma ve yüz hizalama
+4. Yapay gerçeklik (AR) uygulamaları
+5. Panorama oluşturma
+6. Havadan çekilen görüntülerin düzeltilmesi
+7. Sanat eserlerinin ve posterlerin dijital restorasyonu
+
+Perspektif dönüşüm, görüntü işlemede en güçlü dönüşüm türlerinden biridir ve
+özellikle görüntüdeki geometrik bozulmaları düzeltmek için yaygın olarak kullanılır.
+Sonuç olarak, görüntünün daha doğru analiz edilmesini ve görsel olarak daha
+etkileyici olmasını sağlar. 

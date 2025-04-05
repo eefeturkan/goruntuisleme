@@ -225,6 +225,10 @@ class GoruntuIslemeUygulamasi:
         # Kırpma (Cropping) işlemi için buton
         Button(transforms_frame, text="Görüntüyü Kırp", command=self.open_cropping_dialog, 
             width=20).pack(pady=2)
+            
+        # Perspektif düzeltme işlemi için buton
+        Button(transforms_frame, text="Perspektif Düzelt", command=self.open_perspective_correction, 
+            width=20).pack(pady=2)
         
     def open_image(self):
         """
@@ -947,6 +951,148 @@ class GoruntuIslemeUygulamasi:
         # NumPy dizisi dilimleme sözdizimi: array[y_start:y_end, x_start:x_end]
         self.current_image = self.original_image[y_start:y_end, x_start:x_end].copy()
         self.display_image(self.current_image)
+    
+    def open_perspective_correction(self):
+        """
+        Perspektif düzeltme işlemi için bir OpenCV penceresi açar.
+        Kullanıcının düzeltilecek bölgenin 4 köşesini seçmesini sağlar.
+        Seçilen noktalar kullanılarak perspektif dönüşüm uygulanır.
+        """
+        if self.original_image is None:
+            return
+            
+        # Sınıf değişkeni olarak seçilen noktaları saklayacak listeyi tanımla
+        self.selected_points = []
+            
+        # OpenCV ile görüntüyü göster
+        # Görüntüyü RGB'den BGR'ye çevir (OpenCV BGR formatını kullanır)
+        img_to_show = cv2.cvtColor(self.original_image.copy(), cv2.COLOR_RGB2BGR)
+        
+        # Kullanıcıya talimat göster
+        img_with_text = img_to_show.copy()
+        text = "4 nokta secin: Sol Ust -> Sag Ust -> Sol Alt -> Sag Alt"
+        cv2.putText(img_with_text, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        # Pencereyi oluştur ve mouse callback fonksiyonunu bağla
+        cv2.imshow("Perspektif Duzeltme - 4 Nokta Sec", img_with_text)
+        cv2.setMouseCallback("Perspektif Duzeltme - 4 Nokta Sec", self.perspective_correction_select_points, img_to_show)
+        
+        # Kullanıcı 4 nokta seçene kadar veya pencere kapatılana kadar bekle
+        while len(self.selected_points) < 4 and cv2.getWindowProperty("Perspektif Duzeltme - 4 Nokta Sec", cv2.WND_PROP_VISIBLE) > 0:
+            key = cv2.waitKey(100)
+            if key == 27:  # ESC tuşu
+                break
+        
+        # Pencereyi kapat
+        cv2.destroyAllWindows()
+        
+        # Eğer 4 nokta seçildiyse, perspektif düzeltmeyi uygula
+        if len(self.selected_points) == 4:
+            self.apply_perspective_correction()
+    
+    def perspective_correction_select_points(self, event, x, y, flags, param):
+        """
+        Mouse tıklamalarını yakalayan callback fonksiyonu.
+        Her sol tıklamada, tıklanan noktayı selected_points listesine ekler.
+        
+        Parametreler:
+            event: Mouse olayı türü
+            x, y: Tıklanan noktanın koordinatları
+            flags: Ek bayraklar
+            param: Ek parametreler (burada orijinal görüntü kullanılır)
+        """
+        if event == cv2.EVENT_LBUTTONDOWN:
+            # Noktayı listeye ekle
+            self.selected_points.append((x, y))
+            
+            # Noktayı görüntü üzerinde göster
+            img = param.copy()
+            for i, point in enumerate(self.selected_points):
+                cv2.circle(img, point, 5, (0, 0, 255), -1)
+                cv2.putText(img, str(i+1), (point[0]+10, point[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            
+            # Talimatları güncelle
+            remaining = 4 - len(self.selected_points)
+            if remaining > 0:
+                text = f"{remaining} nokta daha secin"
+            else:
+                text = "Tum noktalar secildi! Pencere kapaniyor..."
+            cv2.putText(img, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            
+            # Güncellenmiş görüntüyü göster
+            cv2.imshow("Perspektif Duzeltme - 4 Nokta Sec", img)
+            
+            # Eğer 4 nokta seçildiyse, kısa bir süre sonra pencereyi kapat
+            if len(self.selected_points) == 4:
+                cv2.waitKey(1000)
+                cv2.destroyAllWindows()
+    
+    def apply_perspective_correction(self):
+        """
+        Seçilen 4 nokta kullanılarak perspektif düzeltme işlemini uygular.
+        Seçilen noktalar kaynağı, standart bir dikdörtgen hedefi temsil eder.
+        Dönüşüm matrisi hesaplanır ve warpPerspective ile uygulanır.
+        """
+        if len(self.selected_points) != 4:
+            return
+        
+        # Kullanıcının seçtiği noktaları numpy array'e çevir
+        pts1 = np.float32(self.selected_points)
+        
+        # Dialog ile hedef boyutları belirle
+        perspective_dialog = tk.Toplevel(self.root)
+        perspective_dialog.title("Perspektif Düzeltme Boyutları")
+        perspective_dialog.geometry("300x200")
+        perspective_dialog.resizable(False, False)
+        
+        # Genişlik için giriş alanı
+        Label(perspective_dialog, text="Genişlik:").pack(pady=5)
+        width_entry = tk.Entry(perspective_dialog)
+        width_entry.insert(0, "500")  # Varsayılan değer
+        width_entry.pack(pady=5)
+        
+        # Yükseklik için giriş alanı
+        Label(perspective_dialog, text="Yükseklik:").pack(pady=5)
+        height_entry = tk.Entry(perspective_dialog)
+        height_entry.insert(0, "500")  # Varsayılan değer
+        height_entry.pack(pady=5)
+        
+        # Uygulama butonu
+        def apply_transform():
+            try:
+                width = int(width_entry.get())
+                height = int(height_entry.get())
+                
+                if width <= 0 or height <= 0:
+                    messagebox.showerror("Hata", "Genişlik ve yükseklik pozitif değerler olmalıdır.")
+                    return
+                
+                # Düzeltme sonrası köşeleri belirle (çıkış boyutlarına göre)
+                pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
+                
+                # Perspektif dönüşüm matrisini hesapla
+                matrix = cv2.getPerspectiveTransform(pts1, pts2)
+                
+                # Perspektif dönüşümünü uygula
+                # OpenCV BGR formatını kullanırken, bizim görüntümüz RGB formatında,
+                # bu yüzden gerekli dönüşümleri yapmalıyız
+                img_bgr = cv2.cvtColor(self.original_image, cv2.COLOR_RGB2BGR)
+                warped_image_bgr = cv2.warpPerspective(img_bgr, matrix, (width, height))
+                warped_image_rgb = cv2.cvtColor(warped_image_bgr, cv2.COLOR_BGR2RGB)
+                
+                # İşlenmiş görüntüyü güncelle ve göster
+                self.current_image = warped_image_rgb
+                self.display_image(self.current_image)
+                
+                # Dialog penceresini kapat
+                perspective_dialog.destroy()
+                
+            except ValueError:
+                messagebox.showerror("Hata", "Geçersiz genişlik veya yükseklik değeri!")
+        
+        # Butonları oluştur
+        Button(perspective_dialog, text="İptal", command=perspective_dialog.destroy).pack(side=LEFT, padx=20, pady=20)
+        Button(perspective_dialog, text="Uygula", command=apply_transform).pack(side=RIGHT, padx=20, pady=20)
 
 # Ana program başlangıcı
 # '__main__' kontrolü, bu dosyanın doğrudan çalıştırıldığında çalışmasını sağlar

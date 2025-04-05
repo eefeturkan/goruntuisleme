@@ -28,6 +28,7 @@ Bu uygulama, görüntü işleme dersi için geliştirilmiş bir Python uygulamas
    - Görüntüyü ölçekleme (Scaling/Zoom)
    - Görüntüyü döndürme (Rotation)
    - Görüntüyü kırpma (Cropping)
+   - Perspektif düzeltme (Perspective Correction)
 
 ## Kurulum
 
@@ -66,6 +67,12 @@ Bu uygulama, görüntü işleme dersi için geliştirilmiş bir Python uygulamas
 4. **Eğme (Shearing)**:
    - X ve Y eksenleri boyunca -0.5 ile 0.5 arası eğme faktörleri
    - Parallelogram efekti oluşturma
+
+5. **Perspektif Düzeltme (Perspective Correction)**:
+   - Kullanıcı etkileşimli 4 nokta seçimi
+   - Görüntüdeki eğik yüzeyleri düzleştirme
+   - Çıkış boyutunu özelleştirme imkanı
+   - Belge tarama, eğri yüzeyleri düzeltme gibi uygulamalar için ideal
 
 ## Gereksinimler
 
