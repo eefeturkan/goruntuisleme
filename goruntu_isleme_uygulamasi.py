@@ -53,7 +53,12 @@ class GoruntuIslemeUygulamasi:
         # Ana pencereyi sınıf değişkeni olarak saklıyoruz
         self.root = root
         self.root.title("Görüntü İşleme Uygulaması")
-        self.root.geometry("1280x900")  # Pencerenin boyutunu artırıyoruz
+        
+        # Ekran boyutunu al ve tam ekran olarak ayarla
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+        
         self.root.configure(bg="#f0f0f0")  # Arka plan rengini ayarlıyoruz
         
         # Ana görüntü değişkenleri - bunlar sınıf içinde her yerden erişilebilir değişkenlerdir
@@ -69,16 +74,15 @@ class GoruntuIslemeUygulamasi:
         Uygulama arayüzünün tüm görsel bileşenlerini oluşturan metod.
         Ana çerçeveleri, görüntü gösterme alanlarını ve kontrol butonlarını oluşturur.
         
-        Tkinter, grafik arayüz oluşturmak için kullanılan standart Python kütüphanesidir.
-        Frame, Label, Button gibi bileşenler Tkinter'ın temel arayüz elemanlarıdır.
+        Arayüz şu şekilde düzenlenmiştir:
+        - Sol panel: İşlem butonlarının bir kısmını içerir
+        - Orta panel: Orijinal ve işlenmiş görüntüleri yan yana gösterir
+        - Sağ panel: Diğer işlem butonlarını içerir
         """
-        # Ana çerçeveler - Sol ve sağ ana bölümleri oluşturuyoruz
-        # Frame: Diğer bileşenleri gruplamak için kullanılan konteyner
-        # relief: Çerçeve kenarlığının görünümü (RIDGE, SUNKEN, RAISED vb.)
-        # borderwidth: Kenarlık kalınlığı
+        # Ana çerçeveler oluşturuyoruz
         
         # Sol panel için bir canvas ve scrollbar oluşturuyoruz
-        self.left_outer_frame = Frame(self.root, width=300, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
+        self.left_outer_frame = Frame(self.root, width=350, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
         self.left_outer_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         
         # Sol panele kaydırma çubuğu ekle
@@ -95,36 +99,91 @@ class GoruntuIslemeUygulamasi:
         self.left_frame = Frame(self.left_canvas, bg="#e0e0e0")
         self.left_canvas.create_window((0, 0), window=self.left_frame, anchor="nw")
         
-        # Sağ çerçeve oluştur
-        self.right_frame = Frame(self.root, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
-        self.right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Orta panel (Görüntülerin gösterileceği alan)
+        self.center_frame = Frame(self.root, bg="#f0f0f0", relief=RIDGE, borderwidth=2)
+        self.center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Görüntü gösterme alanı - İşlenen görüntünün gösterileceği bölüm
-        self.image_frame = Frame(self.right_frame, bg="white", relief=SUNKEN, borderwidth=2)
-        self.image_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Orijinal görüntü için çerçeve oluştur
+        self.original_image_frame = Frame(self.center_frame, bg="white", relief=SUNKEN, borderwidth=2, width=400, height=400)
+        self.original_image_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=10)
+        self.original_image_frame.pack_propagate(False)  # Boyutu sabit tut
         
-        # Label: Metin veya görüntü göstermek için kullanılan bileşen
-        self.image_label = Label(self.image_frame, bg="white")
-        self.image_label.pack(fill=tk.BOTH, expand=True)
+        # İşlenmiş görüntü ve histogram için ana çerçeve
+        self.processed_area_frame = Frame(self.center_frame, bg="#f0f0f0", width=400)
+        self.processed_area_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=10)
         
-        # Histogram gösterme alanı - Görüntü histogramının gösterileceği bölüm
-        self.histogram_frame = Frame(self.right_frame, height=200, bg="white", relief=SUNKEN, borderwidth=2)
-        self.histogram_frame.pack(fill=tk.X, padx=10, pady=10)
+        # İşlenmiş görüntü çerçevesi
+        self.processed_image_frame = Frame(self.processed_area_frame, bg="white", relief=SUNKEN, borderwidth=2, width=400, height=400)
+        self.processed_image_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(0, 10))
+        self.processed_image_frame.pack_propagate(False)  # Boyutu sabit tut
         
-        # Kontrol butonları - Sol paneldeki tüm butonları oluşturan metodu çağırıyoruz
+        # Histogram gösterme alanı - işlenmiş görüntünün altında
+        self.histogram_container = Frame(self.processed_area_frame, bg="#f0f0f0", relief=RIDGE, borderwidth=2, height=200)
+        self.histogram_container.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=False)
+        
+        Label(self.histogram_container, text="Histogram", bg="#f0f0f0", font=("Arial", 10, "bold")).pack(pady=5)
+        
+        self.histogram_frame = Frame(self.histogram_container, height=160, bg="white", relief=SUNKEN, borderwidth=2)
+        self.histogram_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        self.histogram_frame.pack_propagate(False)  # Boyutu sabit tut
+        
+        # Görüntü etiketleri
+        Label(self.original_image_frame, text="Orijinal Görüntü", bg="white", font=("Arial", 10, "bold")).pack(pady=5)
+        self.original_image_label = Label(self.original_image_frame, bg="white")
+        self.original_image_label.pack(fill=tk.BOTH, expand=True)
+        
+        Label(self.processed_image_frame, text="İşlenmiş Görüntü", bg="white", font=("Arial", 10, "bold")).pack(pady=5)
+        self.processed_image_label = Label(self.processed_image_frame, bg="white")
+        self.processed_image_label.pack(fill=tk.BOTH, expand=True)
+        
+        # Sağ panel için bir canvas ve scrollbar oluşturuyoruz
+        self.right_outer_frame = Frame(self.root, width=350, bg="#e0e0e0", relief=RIDGE, borderwidth=2)
+        self.right_outer_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+        
+        # Sağ panele kaydırma çubuğu ekle
+        self.right_scrollbar = tk.Scrollbar(self.right_outer_frame, orient="vertical")
+        self.right_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Canvas oluştur ve scrollbar'a bağla
+        self.right_canvas = tk.Canvas(self.right_outer_frame, bg="#e0e0e0", 
+                                    yscrollcommand=self.right_scrollbar.set)
+        self.right_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.right_scrollbar.config(command=self.right_canvas.yview)
+        
+        # Canvas içine konulacak frame oluştur
+        self.right_frame = Frame(self.right_canvas, bg="#e0e0e0")
+        self.right_canvas.create_window((0, 0), window=self.right_frame, anchor="nw")
+        
+        # Kontrol butonları - Sol ve sağ paneldeki butonları oluşturan metodu çağırıyoruz
         self.create_control_buttons()
         
-        # Sol panelin boyutlarını güncelle
+        # Sol ve sağ panelin boyutlarını güncelle
         self.left_frame.update_idletasks()
         self.left_canvas.config(scrollregion=self.left_canvas.bbox("all"))
-        self.left_canvas.config(width=280, height=700)  # Canvas boyutlarını ayarla
+        self.left_canvas.config(width=330, height=800)
         
+        self.right_frame.update_idletasks()
+        self.right_canvas.config(scrollregion=self.right_canvas.bbox("all"))
+        self.right_canvas.config(width=330, height=800)
+    
     def create_control_buttons(self):
         """
-        Sol panelde yer alan tüm kontrol butonlarını ve arayüz elemanlarını oluşturan metod.
-        Dosya işlemleri, temel görüntü işleme, parlaklık, eşikleme, histogram ve kontrast
-        ayarları için gerekli butonları ve kaydırıcıları oluşturur.
+        Sol ve sağ panellerde yer alan tüm kontrol butonlarını ve arayüz elemanlarını oluşturan metod.
+        
+        Sol panelde şu bölümler bulunur:
+        - Dosya işlemleri
+        - Temel işlemler
+        - Parlaklık ayarı
+        - Eşikleme
+        - Histogram işlemleri
+        - Kontrast ayarı
+        
+        Sağ panelde şu bölümler bulunur:
+        - Görüntü dönüşümleri
+        - Filtreleme işlemleri
         """
+        # -------------- SOL PANEL İÇİN KONTROL BUTONLARI --------------
+        
         # Dosya işlemleri bölümü
         file_frame = Frame(self.left_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
         file_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -154,8 +213,6 @@ class GoruntuIslemeUygulamasi:
         Label(brightness_frame, text="Parlaklık Ayarı", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
         
         # Scale: Kaydırıcı bileşeni, değer aralığı belirterek kullanıcıdan sayısal değer almak için kullanılır
-        # from_: Minimum değer, to: Maksimum değer, orient: Kaydırıcının yönü
-        # command: Değer değiştiğinde çağrılacak metod
         self.brightness_scale = Scale(brightness_frame, from_=-100, to=100, orient=HORIZONTAL, 
                                      command=self.adjust_brightness, length=200)
         self.brightness_scale.set(0)  # Başlangıç değerini 0 olarak ayarla
@@ -193,11 +250,13 @@ class GoruntuIslemeUygulamasi:
         self.contrast_scale.set(1.0)  # Başlangıç değerini 1.0 olarak ayarla (normal kontrast)
         self.contrast_scale.pack(pady=2)
         
+        # -------------- SAĞ PANEL İÇİN KONTROL BUTONLARI --------------
+        
         # Görüntü Dönüşümleri bölümü
-        transforms_frame = Frame(self.left_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        transforms_frame = Frame(self.right_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
         transforms_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        # Başlığı normal tema ile aynı yap
+        # Başlık etiketi
         Label(transforms_frame, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
         
         # Taşıma işlemi için buton
@@ -230,6 +289,28 @@ class GoruntuIslemeUygulamasi:
         Button(transforms_frame, text="Perspektif Düzelt", command=self.open_perspective_correction, 
             width=20).pack(pady=2)
         
+        # Filtreleme İşlemleri bölümü
+        filtering_frame = Frame(self.right_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        filtering_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        Label(filtering_frame, text="Filtreleme İşlemleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        
+        # Konvolüsyon filtreleri
+        Button(filtering_frame, text="Ortalama Filtresi", command=self.open_mean_filter_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Medyan Filtresi", command=self.open_median_filter_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Gaussian Filtresi", command=self.open_gaussian_filter_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Konservatif Filtre", command=self.open_conservative_filter_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Crimmins Speckle", command=self.open_crimmins_speckle_dialog, width=20).pack(pady=2)
+        
+        # Frekans alanı filtreleri
+        Button(filtering_frame, text="Fourier Alçak Geçiren", command=self.open_fourier_lowpass_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Fourier Yüksek Geçiren", command=self.open_fourier_highpass_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Band Geçiren Filtre", command=self.open_band_pass_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Band Durduran Filtre", command=self.open_band_stop_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Butterworth Filtresi", command=self.open_butterworth_filter_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Gauss Düşük/Yüksek Geçiren", command=self.open_gaussian_freq_dialog, width=20).pack(pady=2)
+        Button(filtering_frame, text="Homomorfik Filtre", command=self.apply_homomorphic_filter, width=20).pack(pady=2)
+    
     def open_image(self):
         """
         Dosya seçme dialogu açarak bir görüntü dosyası seçmeyi ve yüklemeyi sağlar.
@@ -279,22 +360,34 @@ class GoruntuIslemeUygulamasi:
             
     def display_image(self, image):
         """
-        Verilen görüntüyü arayüzde gösterir. Görüntüyü uygun boyuta getirir
-        ve Tkinter Label'ına yerleştirir.
-        
-        cv2.resize: OpenCV'de görüntü boyutlandırma için kullanılan fonksiyon
-        PIL.Image.fromarray: NumPy dizisini PIL Image nesnesine dönüştürür
-        ImageTk.PhotoImage: PIL Image'i Tkinter'da gösterilebilir formata çevirir
+        Verilen görüntüyü işlenmiş görüntü olarak gösterir ve orijinal görüntüyü de gösterir.
+        Görüntüleri uygun boyuta getirir ve ilgili Tkinter Label'larına yerleştirir.
         
         Parametreler:
-            image (numpy.ndarray): Gösterilecek görüntü (RGB formatlı NumPy dizisi)
+            image (numpy.ndarray): Gösterilecek işlenmiş görüntü (RGB formatlı NumPy dizisi)
         """
         if image is None:
             return
-            
+        
+        # İlk kez bir görüntü gösteriliyorsa veya orijinal görüntü gösterilmek isteniyorsa
+        if self.original_image is not None:
+            # Orijinal görüntüyü göster
+            self._resize_and_display(self.original_image, self.original_image_label)
+        
+        # İşlenmiş görüntüyü göster
+        self._resize_and_display(image, self.processed_image_label)
+    
+    def _resize_and_display(self, image, target_label):
+        """
+        Verilen görüntüyü yeniden boyutlandırır ve hedef label'a yerleştirir.
+        
+        Parametreler:
+            image (numpy.ndarray): Gösterilecek görüntü
+            target_label (tk.Label): Görüntünün yerleştirileceği Label
+        """
         # Görüntüyü yeniden boyutlandır - Eğer görüntü çok büyükse, ekrana sığdırmak için küçültüyoruz
         h, w = image.shape[:2]  # Görüntünün yükseklik ve genişliğini al
-        max_size = 700  # Maksimum boyut
+        max_size = 350  # Tek bir panel için maksimum boyut
         
         if h > max_size or w > max_size:
             # En-boy oranını koru
@@ -306,16 +399,16 @@ class GoruntuIslemeUygulamasi:
             display_img = cv2.resize(image, (new_w, new_h))  # Görüntüyü yeniden boyutlandır
         else:
             display_img = image.copy()
-            
+        
         # NumPy dizisini PIL Image'e dönüştür
         pil_img = Image.fromarray(display_img)
         # PIL Image'i Tkinter PhotoImage'e dönüştür
         tk_img = ImageTk.PhotoImage(pil_img)
         
         # Görüntüyü Label'a yerleştir
-        self.image_label.configure(image=tk_img)
-        self.image_label.image = tk_img  # Referansı koru (Python'un çöp toplayıcısı silmesin diye)
-        
+        target_label.configure(image=tk_img)
+        target_label.image = tk_img  # Referansı koru (Python'un çöp toplayıcısı silmesin diye)
+    
     def show_original(self):
         """
         Orijinal görüntüyü gösterir. İşlenmiş görüntüden sonra
@@ -492,40 +585,74 @@ class GoruntuIslemeUygulamasi:
         matplotlib: Grafik çizmek için kullanılan Python kütüphanesi
         FigureCanvasTkAgg: Matplotlib figürünü Tkinter'a entegre etmek için kullanılır
         """
-        if self.original_image is None:
-            return
+        try:
+            # Hiç görüntü yüklenmemişse işlem yapma
+            if self.original_image is None:
+                messagebox.showinfo("Bilgi", "Önce bir görüntü yüklemelisiniz!")
+                return
+                
+            # Eğer current_image yoksa, original_image'i kullan
+            if self.current_image is None:
+                self.current_image = self.original_image.copy()
+                
+            # Histogram çerçevesini temizle
+            for widget in self.histogram_frame.winfo_children():
+                widget.destroy()
+                
+            # Histogram için özel bir frame oluştur
+            hist_display_frame = Frame(self.histogram_frame, bg="white")
+            hist_display_frame.pack(fill=tk.BOTH, expand=True)
             
-        # Histogram çerçevesini temizle
-        for widget in self.histogram_frame.winfo_children():
-            widget.destroy()
+            # Matplotlib figürü oluştur - boyutları sabit tut
+            fig = plt.Figure(figsize=(12, 3), dpi=80)
+            ax = fig.add_subplot(111)  # 1x1 grid, 1. pozisyon
             
-        # Matplotlib figürü oluştur
-        fig = plt.Figure(figsize=(10, 2), dpi=100)
-        ax = fig.add_subplot(111)  # 1x1 grid, 1. pozisyon
-        
-        # Gri tonlamalı görüntü için histogram
-        # np.array_equal: İki dizinin eşit olup olmadığını kontrol eden NumPy fonksiyonu
-        # Eğer tüm kanallar aynıysa, görüntü gri tonlamalıdır
-        if len(self.current_image.shape) == 2 or (len(self.current_image.shape) == 3 and np.array_equal(self.current_image[:,:,0], self.current_image[:,:,1]) and np.array_equal(self.current_image[:,:,0], self.current_image[:,:,2])):
-            gray_img = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY) if len(self.current_image.shape) == 3 else self.current_image
-            hist = cv2.calcHist([gray_img], [0], None, [256], [0, 256])
-            ax.plot(hist, color='black')
-            ax.set_xlim([0, 256])
-            ax.set_title('Gri Tonlama Histogramı')
-        else:
-            # Renkli görüntü için histogram - Her kanal için ayrı histogram
-            colors = ('r', 'g', 'b')
-            for i, color in enumerate(colors):
-                hist = cv2.calcHist([self.current_image], [i], None, [256], [0, 256])
-                ax.plot(hist, color=color)
-            ax.set_xlim([0, 256])
-            ax.set_title('RGB Histogramı')
+            # Gri tonlamalı görüntü için histogram
+            # np.array_equal: İki dizinin eşit olup olmadığını kontrol eden NumPy fonksiyonu
+            # Eğer tüm kanallar aynıysa, görüntü gri tonlamalıdır
+            if len(self.current_image.shape) == 2 or (len(self.current_image.shape) == 3 and np.array_equal(self.current_image[:,:,0], self.current_image[:,:,1]) and np.array_equal(self.current_image[:,:,0], self.current_image[:,:,2])):
+                gray_img = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY) if len(self.current_image.shape) == 3 else self.current_image
+                hist = cv2.calcHist([gray_img], [0], None, [256], [0, 256])
+                ax.plot(hist, color='black', linewidth=2)
+                ax.set_xlim([0, 256])
+                ax.set_title('Gri Tonlama Histogramı', fontsize=12, fontweight='bold')
+                ax.set_xlabel('Piksel Değeri', fontsize=10)
+                ax.set_ylabel('Piksel Sayısı', fontsize=10)
+                ax.grid(True, linestyle='--', alpha=0.7)
+            else:
+                # Renkli görüntü için histogram - Her kanal için ayrı histogram
+                colors = ('r', 'g', 'b')
+                labels = ('Kırmızı', 'Yeşil', 'Mavi')
+                for i, (color, label) in enumerate(zip(colors, labels)):
+                    hist = cv2.calcHist([self.current_image], [i], None, [256], [0, 256])
+                    ax.plot(hist, color=color, linewidth=2, label=label)
+                ax.set_xlim([0, 256])
+                ax.set_title('RGB Histogramı', fontsize=12, fontweight='bold')
+                ax.set_xlabel('Piksel Değeri', fontsize=10)
+                ax.set_ylabel('Piksel Sayısı', fontsize=10)
+                ax.grid(True, linestyle='--', alpha=0.7)
+                ax.legend()
             
-        # Figürü Tkinter'a ekle
-        canvas = FigureCanvasTkAgg(fig, master=self.histogram_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
+            # Figürü Tkinter'a ekle
+            canvas = FigureCanvasTkAgg(fig, master=hist_display_frame)
+            canvas.draw()
+            
+            # Canvas'ı düzgün bir şekilde yerleştir
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            
+            # Tüm panelleri güncelle
+            self.histogram_frame.update_idletasks()
+            self.center_frame.update_idletasks()
+            self.root.update_idletasks()
+            
+            # Histogramın başarıyla gösterildiğini bildir
+            print("Histogram başarıyla gösterildi.")
+            
+        except Exception as e:
+            # Hata mesajını göster
+            messagebox.showerror("Hata", f"Histogram gösterilirken bir hata oluştu: {str(e)}")
+            print(f"Histogram hatası: {str(e)}")
+    
     def equalize_histogram(self):
         """
         Histogram eşitleme uygular. Bu işlem, görüntünün kontrastını artırır
@@ -622,18 +749,18 @@ class GoruntuIslemeUygulamasi:
             tx (int): X ekseninde taşıma miktarı
             ty (int): Y ekseninde taşıma miktarı
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntü boyutları
-        h, w = self.original_image.shape[:2]
+        h, w = self.current_image.shape[:2]
         
         # Taşıma matrisi oluştur [ [1, 0, tx], [0, 1, ty] ]
         # İlk parametre 2x3'lük bir matris olmalı
         M = np.float32([[1, 0, tx], [0, 1, ty]])
         
         # Görüntüyü taşı
-        self.current_image = cv2.warpAffine(self.original_image, M, (w, h))
+        self.current_image = cv2.warpAffine(self.current_image, M, (w, h))
         self.display_image(self.current_image)
     
     def flip_horizontal(self):
@@ -644,11 +771,11 @@ class GoruntuIslemeUygulamasi:
         cv2.flip: Görüntüyü belirtilen eksende çeviren OpenCV fonksiyonu
         flipCode = 1: Yatay eksende aynalama
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntüyü yatay eksende aynala (flipCode = 1)
-        self.current_image = cv2.flip(self.original_image, 1)
+        self.current_image = cv2.flip(self.current_image, 1)
         self.display_image(self.current_image)
     
     def flip_vertical(self):
@@ -659,11 +786,11 @@ class GoruntuIslemeUygulamasi:
         cv2.flip: Görüntüyü belirtilen eksende çeviren OpenCV fonksiyonu
         flipCode = 0: Dikey eksende aynalama
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntüyü dikey eksende aynala (flipCode = 0)
-        self.current_image = cv2.flip(self.original_image, 0)
+        self.current_image = cv2.flip(self.current_image, 0)
         self.display_image(self.current_image)
     
     def open_shearing_dialog(self):
@@ -715,17 +842,17 @@ class GoruntuIslemeUygulamasi:
             sx (float): X ekseninde eğme miktarı
             sy (float): Y ekseninde eğme miktarı
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntü boyutları
-        h, w = self.original_image.shape[:2]
+        h, w = self.current_image.shape[:2]
         
         # Eğme matrisi oluştur
         M = np.float32([[1, sx, 0], [sy, 1, 0]])
         
         # Görüntüyü eğ
-        self.current_image = cv2.warpAffine(self.original_image, M, (w, h))
+        self.current_image = cv2.warpAffine(self.current_image, M, (w, h))
         self.display_image(self.current_image)
     
     def open_scaling_dialog(self):
@@ -777,11 +904,11 @@ class GoruntuIslemeUygulamasi:
             sx (float): X ekseninde ölçekleme oranı
             sy (float): Y ekseninde ölçekleme oranı
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntü boyutları
-        h, w = self.original_image.shape[:2]
+        h, w = self.current_image.shape[:2]
         
         # Yeni boyutları hesapla
         new_w = int(w * sx)
@@ -790,7 +917,7 @@ class GoruntuIslemeUygulamasi:
         # Görüntüyü ölçekle (yeniden boyutlandır)
         # Büyütme işlemi için cv2.INTER_CUBIC, küçültme işlemi için cv2.INTER_AREA önerilir
         interpolation = cv2.INTER_CUBIC if sx > 1 or sy > 1 else cv2.INTER_AREA
-        self.current_image = cv2.resize(self.original_image, (new_w, new_h), interpolation=interpolation)
+        self.current_image = cv2.resize(self.current_image, (new_w, new_h), interpolation=interpolation)
         self.display_image(self.current_image)
     
     def open_rotation_dialog(self):
@@ -834,11 +961,11 @@ class GoruntuIslemeUygulamasi:
         Parametreler:
             angle (int): Döndürme açısı (derece cinsinden, pozitif değerler saat yönünün tersine)
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntü boyutları
-        h, w = self.original_image.shape[:2]
+        h, w = self.current_image.shape[:2]
         
         # Görüntünün merkezi
         center = (w // 2, h // 2)
@@ -858,7 +985,7 @@ class GoruntuIslemeUygulamasi:
         M[1, 2] += (new_h / 2) - center[1]
         
         # Görüntüyü döndür
-        self.current_image = cv2.warpAffine(self.original_image, M, (new_w, new_h))
+        self.current_image = cv2.warpAffine(self.current_image, M, (new_w, new_h))
         self.display_image(self.current_image)
     
     def open_cropping_dialog(self):
@@ -944,12 +1071,12 @@ class GoruntuIslemeUygulamasi:
             x_end (int): Kırpılacak bölgenin sağ kenarı
             y_end (int): Kırpılacak bölgenin alt kenarı
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Görüntüyü kırp
         # NumPy dizisi dilimleme sözdizimi: array[y_start:y_end, x_start:x_end]
-        self.current_image = self.original_image[y_start:y_end, x_start:x_end].copy()
+        self.current_image = self.current_image[y_start:y_end, x_start:x_end].copy()
         self.display_image(self.current_image)
     
     def open_perspective_correction(self):
@@ -958,7 +1085,7 @@ class GoruntuIslemeUygulamasi:
         Kullanıcının düzeltilecek bölgenin 4 köşesini seçmesini sağlar.
         Seçilen noktalar kullanılarak perspektif dönüşüm uygulanır.
         """
-        if self.original_image is None:
+        if self.current_image is None:
             return
             
         # Sınıf değişkeni olarak seçilen noktaları saklayacak listeyi tanımla
@@ -966,7 +1093,7 @@ class GoruntuIslemeUygulamasi:
             
         # OpenCV ile görüntüyü göster
         # Görüntüyü RGB'den BGR'ye çevir (OpenCV BGR formatını kullanır)
-        img_to_show = cv2.cvtColor(self.original_image.copy(), cv2.COLOR_RGB2BGR)
+        img_to_show = cv2.cvtColor(self.current_image.copy(), cv2.COLOR_RGB2BGR)
         
         # Kullanıcıya talimat göster
         img_with_text = img_to_show.copy()
@@ -989,7 +1116,7 @@ class GoruntuIslemeUygulamasi:
         # Eğer 4 nokta seçildiyse, perspektif düzeltmeyi uygula
         if len(self.selected_points) == 4:
             self.apply_perspective_correction()
-    
+            
     def perspective_correction_select_points(self, event, x, y, flags, param):
         """
         Mouse tıklamalarını yakalayan callback fonksiyonu.
@@ -1076,7 +1203,7 @@ class GoruntuIslemeUygulamasi:
                 # Perspektif dönüşümünü uygula
                 # OpenCV BGR formatını kullanırken, bizim görüntümüz RGB formatında,
                 # bu yüzden gerekli dönüşümleri yapmalıyız
-                img_bgr = cv2.cvtColor(self.original_image, cv2.COLOR_RGB2BGR)
+                img_bgr = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2BGR)
                 warped_image_bgr = cv2.warpPerspective(img_bgr, matrix, (width, height))
                 warped_image_rgb = cv2.cvtColor(warped_image_bgr, cv2.COLOR_BGR2RGB)
                 
@@ -1093,6 +1220,1277 @@ class GoruntuIslemeUygulamasi:
         # Butonları oluştur
         Button(perspective_dialog, text="İptal", command=perspective_dialog.destroy).pack(side=LEFT, padx=20, pady=20)
         Button(perspective_dialog, text="Uygula", command=apply_transform).pack(side=RIGHT, padx=20, pady=20)
+    
+    # ------------ FİLTRELEME İŞLEMLERİ ------------
+    
+    def open_mean_filter_dialog(self):
+        """
+        Ortalama filtresi uygulamak için bir dialog penceresi açar.
+        Bu dialog, kullanıcının filtrenin çekirdek boyutunu belirlemesini sağlar.
+        
+        Ortalama filtresi, görüntüdeki piksel değerlerini belirli bir komşuluktaki piksellerin 
+        ortalaması ile değiştirerek gürültüyü azaltır ve görüntüyü yumuşatır.
+        """
+        if self.current_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        mean_dialog = tk.Toplevel(self.root)
+        mean_dialog.title("Ortalama Filtresi")
+        mean_dialog.geometry("300x150")
+        mean_dialog.resizable(False, False)
+        
+        # Çekirdek boyutu için seçim
+        Label(mean_dialog, text="Çekirdek Boyutu:").pack(pady=5)
+        kernel_size_var = tk.StringVar(value="3")
+        kernel_sizes = ["3", "5", "7", "9", "11", "15"]
+        kernel_dropdown = ttk.Combobox(mean_dialog, textvariable=kernel_size_var, values=kernel_sizes, state="readonly", width=10)
+        kernel_dropdown.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_mean_filter():
+            kernel_size = int(kernel_size_var.get())
+            self.apply_mean_filter(kernel_size)
+            mean_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(mean_dialog, text="Uygula", command=apply_mean_filter, width=15).pack(pady=10)
+    
+    def apply_mean_filter(self, kernel_size):
+        """
+        Görüntüye ortalama filtresi uygular.
+        
+        cv2.blur: Ortalama filtresi uygulayan OpenCV fonksiyonu
+        
+        Parametreler:
+            kernel_size (int): Filtre çekirdeğinin boyutu (örn. 3 için 3x3 çekirdek)
+        """
+        if self.current_image is None:
+            return
+        
+        # Görüntüyü ortalama filtresi ile filtrele
+        self.current_image = cv2.blur(self.current_image, (kernel_size, kernel_size))
+        self.display_image(self.current_image)
+    
+    def open_median_filter_dialog(self):
+        """
+        Medyan filtresi uygulamak için bir dialog penceresi açar.
+        Bu dialog, kullanıcının filtrenin çekirdek boyutunu belirlemesini sağlar.
+        
+        Medyan filtresi, görüntüdeki piksel değerlerini belirli bir komşuluktaki piksellerin 
+        medyanı ile değiştirerek gürültüyü azaltır. Salt & pepper (tuz ve biber) gürültüsünü 
+        gidermede özellikle etkilidir.
+        """
+        if self.current_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        median_dialog = tk.Toplevel(self.root)
+        median_dialog.title("Medyan Filtresi")
+        median_dialog.geometry("300x150")
+        median_dialog.resizable(False, False)
+        
+        # Çekirdek boyutu için seçim - Medyan filtresi için tek sayı olmalı
+        Label(median_dialog, text="Çekirdek Boyutu:").pack(pady=5)
+        kernel_size_var = tk.StringVar(value="3")
+        kernel_sizes = ["3", "5", "7", "9", "11"]
+        kernel_dropdown = ttk.Combobox(median_dialog, textvariable=kernel_size_var, values=kernel_sizes, state="readonly", width=10)
+        kernel_dropdown.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_median_filter():
+            kernel_size = int(kernel_size_var.get())
+            self.apply_median_filter(kernel_size)
+            median_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(median_dialog, text="Uygula", command=apply_median_filter, width=15).pack(pady=10)
+    
+    def apply_median_filter(self, kernel_size):
+        """
+        Görüntüye medyan filtresi uygular.
+        
+        cv2.medianBlur: Medyan filtresi uygulayan OpenCV fonksiyonu
+        
+        Parametreler:
+            kernel_size (int): Filtre çekirdeğinin boyutu (örn. 3 için 3x3 çekirdek)
+        """
+        if self.current_image is None:
+            return
+        
+        # Görüntüyü medyan filtresi ile filtrele
+        self.current_image = cv2.medianBlur(self.current_image, kernel_size)
+        self.display_image(self.current_image)
+
+    def open_gaussian_filter_dialog(self):
+        """
+        Mekansal Gaussian filtresi uygulamak için bir dialog penceresi açar.
+        
+        Gaussian filtresi, görüntüyü 2 boyutlu Gaussian fonksiyonu ile konvolüsyon yaparak gürültüyü
+        azaltırken keskin hatları da koruyan bir yumuşatma filtresidir.
+        """
+        if self.current_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        gaussian_dialog = tk.Toplevel(self.root)
+        gaussian_dialog.title("Gaussian Filtresi")
+        gaussian_dialog.geometry("300x200")
+        gaussian_dialog.resizable(False, False)
+        
+        # Çekirdek boyutu için seçim
+        Label(gaussian_dialog, text="Çekirdek Boyutu:").pack(pady=5)
+        kernel_size_var = tk.StringVar(value="3")
+        kernel_sizes = ["3", "5", "7", "9", "11", "15"]
+        kernel_dropdown = ttk.Combobox(gaussian_dialog, textvariable=kernel_size_var, values=kernel_sizes, state="readonly", width=10)
+        kernel_dropdown.pack(pady=5)
+        
+        # Sigma değeri için slider
+        Label(gaussian_dialog, text="Sigma Değeri:").pack(pady=5)
+        sigma_scale = Scale(gaussian_dialog, from_=0.1, to=5.0, resolution=0.1, orient=HORIZONTAL, length=200)
+        sigma_scale.set(1.0)  # Varsayılan değer
+        sigma_scale.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_gaussian_filter():
+            kernel_size = int(kernel_size_var.get())
+            sigma = sigma_scale.get()
+            self.apply_gaussian_filter(kernel_size, sigma)
+            gaussian_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(gaussian_dialog, text="Uygula", command=apply_gaussian_filter, width=15).pack(pady=10)
+    
+    def apply_gaussian_filter(self, kernel_size, sigma):
+        """
+        Görüntüye mekansal Gaussian filtresi uygular.
+        
+        cv2.GaussianBlur: Gaussian filtresi uygulayan OpenCV fonksiyonu
+        
+        Parametreler:
+            kernel_size (int): Filtre çekirdeğinin boyutu (örn. 3 için 3x3 çekirdek)
+            sigma (float): Gaussian fonksiyonunun standart sapması
+        """
+        if self.current_image is None:
+            return
+        
+        # Görüntüyü Gaussian filtresi ile filtrele
+        self.current_image = cv2.GaussianBlur(self.current_image, (kernel_size, kernel_size), sigma)
+        self.display_image(self.current_image)
+        
+    def apply_conservative_filter(self):
+        """
+        Görüntüye konservatif filtreleme uygular.
+        
+        Konservatif filtreleme, bir piksel etrafındaki komşu piksellerin minimum ve maksimum değerleri
+        arasında sınırlama yaparak gürültüyü azaltan bir yöntemdir. Bu yöntem, kenarları korur ve
+        küçük gürültüleri giderir.
+        
+        OpenCV'de doğrudan bu filtre bulunmadığı için manuel olarak uygulanmıştır.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü bir kopya olarak alınır
+        result = self.current_image.copy()
+        
+        # Gri tonlama görüntüsü için işlemi gerçekleştir
+        if len(self.current_image.shape) == 2 or (len(self.current_image.shape) == 3 and self.current_image.shape[2] == 1):
+            # Gri tonlama görüntüsü
+            padded = cv2.copyMakeBorder(self.current_image, 1, 1, 1, 1, cv2.BORDER_REFLECT)
+            
+            for i in range(1, padded.shape[0]-1):
+                for j in range(1, padded.shape[1]-1):
+                    # 3x3 pencere
+                    window = padded[i-1:i+2, j-1:j+2]
+                    center = padded[i, j]
+                    
+                    # Minimum ve maksimum değerleri bul
+                    min_val = np.min(window)
+                    max_val = np.max(window)
+                    
+                    # Eğer merkez piksel minimum değerden küçükse, minimum olarak ayarla
+                    if center < min_val:
+                        result[i-1, j-1] = min_val
+                    # Eğer merkez piksel maksimum değerden büyükse, maksimum olarak ayarla
+                    elif center > max_val:
+                        result[i-1, j-1] = max_val
+                    # Aksi takdirde değişiklik yapma
+        else:
+            # Renkli görüntü (BGR)
+            # Her kanal için ayrı ayrı filtrele
+            for k in range(3):  # 3 kanal: B, G, R
+                padded = cv2.copyMakeBorder(self.current_image[:,:,k], 1, 1, 1, 1, cv2.BORDER_REFLECT)
+                
+                for i in range(1, padded.shape[0]-1):
+                    for j in range(1, padded.shape[1]-1):
+                        # 3x3 pencere
+                        window = padded[i-1:i+2, j-1:j+2]
+                        center = padded[i, j]
+                        
+                        # Minimum ve maksimum değerleri bul
+                        min_val = np.min(window)
+                        max_val = np.max(window)
+                        
+                        # Eğer merkez piksel minimum değerden küçükse, minimum olarak ayarla
+                        if center < min_val:
+                            result[i-1, j-1, k] = min_val
+                        # Eğer merkez piksel maksimum değerden büyükse, maksimum olarak ayarla
+                        elif center > max_val:
+                            result[i-1, j-1, k] = max_val
+                        # Aksi takdirde değişiklik yapma
+        
+        self.current_image = result
+        self.display_image(self.current_image)
+
+    def open_conservative_filter_dialog(self):
+        """
+        Konservatif filtreleme işlemi için bir dialog penceresi açar.
+        
+        Konservatif filtre, görüntüdeki tuz ve biber gürültüsünü azaltırken
+        kenarları koruyan bir filtreleme türüdür.
+        """
+        if self.current_image is None:
+            return
+            
+        # Onay mesajı
+        confirm = messagebox.askyesno(
+            "Konservatif Filtreleme", 
+            "Konservatif filtreleme işlemi başlatılacak.\n\n"
+            "Bu işlem büyük görüntülerde uzun sürebilir.\n"
+            "Devam etmek istiyor musunuz?"
+        )
+        
+        if confirm:
+            # İşlemi başlat
+            self.apply_conservative_filter()
+
+    def open_crimmins_speckle_dialog(self):
+        """
+        Crimmins Speckle gürültü giderme işlemi için bir dialog penceresi açar.
+        
+        Crimmins Speckle algoritması, özellikle tuz ve biber gürültüsünü gidermekte
+        etkili olan bir yöntemdir.
+        """
+        if self.current_image is None:
+            return
+            
+        # Onay mesajı
+        confirm = messagebox.askyesno(
+            "Crimmins Speckle Filtreleme", 
+            "Crimmins Speckle filtreleme işlemi başlatılacak.\n\n"
+            "Bu işlem büyük görüntülerde uzun sürebilir.\n"
+            "Devam etmek istiyor musunuz?"
+        )
+        
+        if confirm:
+            # İşlemi başlat
+            self.apply_crimmins_speckle()
+
+    def apply_crimmins_speckle(self):
+        """
+        Görüntüye Crimmins speckle gürültü giderme algoritmasını uygular.
+        
+        Crimmins algoritması piksel değerlerini, komşu piksellerle karşılaştırarak
+        gürültülü pikselleri tanıyan ve düzelten, özellikle speckle (nokta) gürültüsü 
+        gidermede etkili bir yöntemdir.
+        
+        OpenCV'de doğrudan bu filtre bulunmadığı için manuel olarak uygulanmıştır.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü bir kopya olarak alınır
+        result = self.current_image.copy()
+        
+        # Crimmins speckle gürültü giderme algoritması
+        def crimmins_one_iteration(img, copy):
+            # Yardımcı fonksiyonlar - sırasıyla 4 yönde ilerleyip filtreleme yapar
+            # Kuzey (yukarı)
+            for i in range(1, img.shape[0]):
+                for j in range(img.shape[1]):
+                    if img[i-1, j] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i-1, j] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Güney (aşağı)
+            for i in range(img.shape[0]-2, -1, -1):
+                for j in range(img.shape[1]):
+                    if img[i+1, j] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i+1, j] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Doğu (sağa)
+            for i in range(img.shape[0]):
+                for j in range(1, img.shape[1]):
+                    if img[i, j-1] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i, j-1] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Batı (sola)
+            for i in range(img.shape[0]):
+                for j in range(img.shape[1]-2, -1, -1):
+                    if img[i, j+1] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i, j+1] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Kuzeydoğu (sağ üst çapraz)
+            for i in range(1, img.shape[0]):
+                for j in range(1, img.shape[1]):
+                    if img[i-1, j-1] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i-1, j-1] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Güneybatı (sol alt çapraz)
+            for i in range(img.shape[0]-2, -1, -1):
+                for j in range(img.shape[1]-2, -1, -1):
+                    if img[i+1, j+1] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i+1, j+1] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Kuzeybatı (sol üst çapraz)
+            for i in range(1, img.shape[0]):
+                for j in range(img.shape[1]-2, -1, -1):
+                    if img[i-1, j+1] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i-1, j+1] + 2:
+                        copy[i, j] = copy[i, j] - 1
+            
+            # Güneydoğu (sağ alt çapraz)
+            for i in range(img.shape[0]-2, -1, -1):
+                for j in range(1, img.shape[1]):
+                    if img[i+1, j-1] >= img[i, j] + 2:
+                        copy[i, j] = copy[i, j] + 1
+                    elif img[i, j] >= img[i+1, j-1] + 2:
+                        copy[i, j] = copy[i, j] - 1
+                        
+            return copy
+        
+        # Gri tonlama görüntüsü için işlemi gerçekleştir
+        if len(self.current_image.shape) == 2 or (len(self.current_image.shape) == 3 and self.current_image.shape[2] == 1):
+            # Gri tonlama görüntüsü
+            img_copy = self.current_image.copy()
+            # Algoritma 5 kez uygulandı
+            for _ in range(5):
+                img_copy = crimmins_one_iteration(img_copy, img_copy.copy())
+            result = img_copy
+        else:
+            # Renkli görüntü (BGR)
+            # Her kanal için ayrı ayrı filtrele
+            for k in range(3):  # 3 kanal: B, G, R
+                img_channel = self.current_image[:,:,k].copy()
+                img_copy = img_channel.copy()
+                # Algoritma 5 kez uygulandı
+                for _ in range(5):
+                    img_copy = crimmins_one_iteration(img_copy, img_copy.copy())
+                result[:,:,k] = img_copy
+        
+        self.current_image = result
+        self.display_image(self.current_image)
+
+    def _fourier_transform(self, image):
+        """
+        Görüntünün Fourier dönüşümünü hesaplar.
+        
+        Parametreler:
+            image: Dönüşüm uygulanacak görüntü
+            
+        Dönüş:
+            f_transform: Kompleks Fourier dönüşümü
+            magnitude_spectrum: Görselleştirme için kullanılabilecek genlik spektrumu
+            dft_shift: Merkezi kaydırılmış Fourier dönüşümü
+        """
+        # Görüntü boyutunu optimize et
+        rows, cols = image.shape
+        optimal_rows = cv2.getOptimalDFTSize(rows)
+        optimal_cols = cv2.getOptimalDFTSize(cols)
+        
+        # Görüntüyü optimal boyuta genişlet (sınırları sıfırla doldur)
+        padded = cv2.copyMakeBorder(image, 0, optimal_rows - rows, 0, optimal_cols - cols, cv2.BORDER_CONSTANT, value=0)
+        
+        # Fourier dönüşümünü hesapla
+        f_transform = cv2.dft(np.float32(padded), flags=cv2.DFT_COMPLEX_OUTPUT)
+        
+        # Düşük frekans bileşenlerini merkeze taşı
+        dft_shift = np.fft.fftshift(f_transform)
+        
+        # Fourier dönüşümünün genlik spektrumunu hesapla
+        magnitude_spectrum = 20 * np.log(cv2.magnitude(dft_shift[:,:,0], dft_shift[:,:,1]) + 1)
+        
+        return f_transform, magnitude_spectrum, dft_shift
+
+    def _inverse_fourier_transform(self, dft_shift, original_shape):
+        """
+        Fourier dönüşümünün tersini alarak görüntüyü geri oluşturur.
+        
+        Parametreler:
+            dft_shift: Merkezi kaydırılmış Fourier dönüşümü
+            original_shape: Orijinal görüntünün boyutu (satır, sütun)
+            
+        Dönüş:
+            Ters Fourier dönüşümü ile elde edilen görüntü
+        """
+        # Merkez kaydırmayı geri al
+        f_ishift = np.fft.ifftshift(dft_shift)
+        
+        # Ters Fourier dönüşümünü hesapla
+        img_back = cv2.idft(f_ishift)
+        
+        # Gerçek kısmını al ve normlandır
+        img_back = cv2.magnitude(img_back[:,:,0], img_back[:,:,1])
+        
+        # Orijinal boyuta kırp ve normalize et
+        rows, cols = original_shape
+        img_back = img_back[0:rows, 0:cols]
+        cv2.normalize(img_back, img_back, 0, 255, cv2.NORM_MINMAX)
+        
+        return np.uint8(img_back)
+
+    def open_fourier_lowpass_dialog(self):
+        """
+        Fourier Alçak Geçiren Filtre dialog penceresini açar.
+        
+        Alçak geçiren filtre, görüntüdeki yüksek frekans bileşenlerini (kenar, detay, gürültü) 
+        zayıflatırken düşük frekans bileşenlerini (büyük yapılar, düşük kontrast) geçirir.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        lowpass_dialog = tk.Toplevel(self.root)
+        lowpass_dialog.title("Fourier Alçak Geçiren Filtre")
+        lowpass_dialog.geometry("400x250")
+        lowpass_dialog.resizable(False, False)
+        
+        # Yarıçap için slider
+        Label(lowpass_dialog, text="Filtre Yarıçapı:").pack(pady=5)
+        radius_scale = Scale(lowpass_dialog, from_=10, to=200, resolution=1, orient=HORIZONTAL, length=300)
+        radius_scale.set(50)  # Varsayılan değer
+        radius_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(lowpass_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_lowpass_filter():
+            radius = radius_scale.get()
+            show_spectrum = preview_var.get()
+            self.apply_fourier_lowpass(radius, gray_image, show_spectrum)
+            lowpass_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(lowpass_dialog, text="Uygula", command=apply_lowpass_filter, width=15).pack(pady=10)
+    
+    def apply_fourier_lowpass(self, radius, gray_image, show_spectrum=False):
+        """
+        Görüntüye Fourier Alçak Geçiren Filtre uygular.
+        
+        Parametreler:
+            radius: Filtre yarıçapı
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Fourier dönüşümünü hesapla
+        _, _, dft_shift = self._fourier_transform(gray_image)
+        
+        # Görüntü merkez koordinatlarını bul
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Merkez etrafında belirli yarıçapta maske oluştur
+        mask = np.zeros((rows, cols, 2), np.uint8)
+        center = [crow, ccol]
+        x, y = np.ogrid[:rows, :cols]
+        mask_area = (x - center[0]) ** 2 + (y - center[1]) ** 2 <= radius ** 2
+        mask[mask_area] = 1
+        
+        # Filtreyi uygula
+        filtered_dft = dft_shift * mask
+        
+        # Görüntüyü geri oluştur
+        filtered_image = self._inverse_fourier_transform(filtered_dft, (rows, cols))
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Filtreli spektrumu hesapla
+            filtered_spectrum = 20 * np.log(cv2.magnitude(filtered_dft[:,:,0], filtered_dft[:,:,1]) + 1)
+            
+            # Yan yana göstermek için
+            result = np.hstack((filtered_image, cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)))
+            cv2.imshow("Alçak Geçiren Filtre ve Spektrum", result)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için Fourier dönüşümünü hesapla
+                channel = self.current_image[:,:,i]
+                _, _, dft_shift_channel = self._fourier_transform(channel)
+                
+                # Filtreyi uygula
+                filtered_dft_channel = dft_shift_channel * mask
+                
+                # Kanalı geri oluştur
+                result[:,:,i] = self._inverse_fourier_transform(filtered_dft_channel, (rows, cols))
+                
+            self.current_image = result
+        else:
+            self.current_image = filtered_image
+            
+        self.display_image(self.current_image)
+
+    def open_fourier_highpass_dialog(self):
+        """
+        Fourier Yüksek Geçiren Filtre dialog penceresini açar.
+        
+        Yüksek geçiren filtre, görüntüdeki düşük frekans bileşenlerini (büyük yapılar, düşük kontrast) 
+        zayıflatırken yüksek frekans bileşenlerini (kenar, detay) geçirir.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        highpass_dialog = tk.Toplevel(self.root)
+        highpass_dialog.title("Fourier Yüksek Geçiren Filtre")
+        highpass_dialog.geometry("400x250")
+        highpass_dialog.resizable(False, False)
+        
+        # Yarıçap için slider
+        Label(highpass_dialog, text="Filtre Yarıçapı:").pack(pady=5)
+        radius_scale = Scale(highpass_dialog, from_=1, to=100, resolution=1, orient=HORIZONTAL, length=300)
+        radius_scale.set(30)  # Varsayılan değer
+        radius_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(highpass_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_highpass_filter():
+            radius = radius_scale.get()
+            show_spectrum = preview_var.get()
+            self.apply_fourier_highpass(radius, gray_image, show_spectrum)
+            highpass_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(highpass_dialog, text="Uygula", command=apply_highpass_filter, width=15).pack(pady=10)
+    
+    def apply_fourier_highpass(self, radius, gray_image, show_spectrum=False):
+        """
+        Görüntüye Fourier Yüksek Geçiren Filtre uygular.
+        
+        Parametreler:
+            radius: Filtre yarıçapı
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Fourier dönüşümünü hesapla
+        _, _, dft_shift = self._fourier_transform(gray_image)
+        
+        # Görüntü merkez koordinatlarını bul
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Merkez etrafında belirli yarıçapta maske oluştur (yüksek geçiren filtre için tersi)
+        mask = np.ones((rows, cols, 2), np.uint8)
+        center = [crow, ccol]
+        x, y = np.ogrid[:rows, :cols]
+        mask_area = (x - center[0]) ** 2 + (y - center[1]) ** 2 <= radius ** 2
+        mask[mask_area] = 0
+        
+        # Filtreyi uygula
+        filtered_dft = dft_shift * mask
+        
+        # Görüntüyü geri oluştur
+        filtered_image = self._inverse_fourier_transform(filtered_dft, (rows, cols))
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Filtreli spektrumu hesapla
+            filtered_spectrum = 20 * np.log(cv2.magnitude(filtered_dft[:,:,0], filtered_dft[:,:,1]) + 1)
+            
+            # Yan yana göstermek için
+            result = np.hstack((filtered_image, cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)))
+            cv2.imshow("Yüksek Geçiren Filtre ve Spektrum", result)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için Fourier dönüşümünü hesapla
+                channel = self.current_image[:,:,i]
+                _, _, dft_shift_channel = self._fourier_transform(channel)
+                
+                # Filtreyi uygula
+                filtered_dft_channel = dft_shift_channel * mask
+                
+                # Kanalı geri oluştur
+                result[:,:,i] = self._inverse_fourier_transform(filtered_dft_channel, (rows, cols))
+                
+            self.current_image = result
+        else:
+            self.current_image = filtered_image
+            
+        self.display_image(self.current_image)
+
+    def open_band_pass_dialog(self):
+        """
+        Bant Geçiren Filtre dialog penceresini açar.
+        
+        Bant geçiren filtre, görüntüdeki belirli bir frekans aralığını geçirirken
+        diğer frekansları zayıflatır. Bu, belirli bir ölçek seviyesindeki yapıları 
+        görüntüde korumak/vurgulamak için kullanılır.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        bandpass_dialog = tk.Toplevel(self.root)
+        bandpass_dialog.title("Bant Geçiren Filtre")
+        bandpass_dialog.geometry("400x300")
+        bandpass_dialog.resizable(False, False)
+        
+        # İç yarıçap için slider
+        Label(bandpass_dialog, text="İç Yarıçap:").pack(pady=5)
+        inner_radius_scale = Scale(bandpass_dialog, from_=1, to=100, resolution=1, orient=HORIZONTAL, length=300)
+        inner_radius_scale.set(20)  # Varsayılan değer
+        inner_radius_scale.pack(pady=5)
+        
+        # Dış yarıçap için slider
+        Label(bandpass_dialog, text="Dış Yarıçap:").pack(pady=5)
+        outer_radius_scale = Scale(bandpass_dialog, from_=10, to=200, resolution=1, orient=HORIZONTAL, length=300)
+        outer_radius_scale.set(50)  # Varsayılan değer
+        outer_radius_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(bandpass_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_band_pass_filter():
+            inner_radius = inner_radius_scale.get()
+            outer_radius = outer_radius_scale.get()
+            
+            # İç yarıçap dış yarıçaptan büyük olmamalı
+            if inner_radius >= outer_radius:
+                messagebox.showerror("Hata", "İç yarıçap dış yarıçaptan küçük olmalıdır!")
+                return
+                
+            show_spectrum = preview_var.get()
+            self.apply_band_pass(inner_radius, outer_radius, gray_image, show_spectrum)
+            bandpass_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(bandpass_dialog, text="Uygula", command=apply_band_pass_filter, width=15).pack(pady=10)
+    
+    def apply_band_pass(self, inner_radius, outer_radius, gray_image, show_spectrum=False):
+        """
+        Görüntüye Bant Geçiren Filtre uygular.
+        
+        Parametreler:
+            inner_radius: İç yarıçap (küçük değer)
+            outer_radius: Dış yarıçap (büyük değer)
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Fourier dönüşümünü hesapla
+        _, _, dft_shift = self._fourier_transform(gray_image)
+        
+        # Görüntü merkez koordinatlarını bul
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Bant geçiren maske oluştur
+        mask = np.zeros((rows, cols, 2), np.uint8)
+        center = [crow, ccol]
+        x, y = np.ogrid[:rows, :cols]
+        
+        # İç ve dış daireler arasındaki alanı hesapla
+        mask_area = np.logical_and(
+            (x - center[0]) ** 2 + (y - center[1]) ** 2 >= inner_radius ** 2,
+            (x - center[0]) ** 2 + (y - center[1]) ** 2 <= outer_radius ** 2
+        )
+        mask[mask_area] = 1
+        
+        # Filtreyi uygula
+        filtered_dft = dft_shift * mask
+        
+        # Görüntüyü geri oluştur
+        filtered_image = self._inverse_fourier_transform(filtered_dft, (rows, cols))
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Filtreli spektrumu hesapla
+            filtered_spectrum = 20 * np.log(cv2.magnitude(filtered_dft[:,:,0], filtered_dft[:,:,1]) + 1)
+            
+            # Yan yana göstermek için
+            result = np.hstack((filtered_image, cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)))
+            cv2.imshow("Bant Geçiren Filtre ve Spektrum", result)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için Fourier dönüşümünü hesapla
+                channel = self.current_image[:,:,i]
+                _, _, dft_shift_channel = self._fourier_transform(channel)
+                
+                # Filtreyi uygula
+                filtered_dft_channel = dft_shift_channel * mask
+                
+                # Kanalı geri oluştur
+                result[:,:,i] = self._inverse_fourier_transform(filtered_dft_channel, (rows, cols))
+                
+            self.current_image = result
+        else:
+            self.current_image = filtered_image
+            
+        self.display_image(self.current_image)
+
+    def open_band_stop_dialog(self):
+        """
+        Bant Durduran Filtre dialog penceresini açar.
+        
+        Bant durduran filtre, görüntüdeki belirli bir frekans aralığını zayıflatırken
+        diğer frekansları geçirir. Bu, belirli periyodik gürültüleri gidermek için kullanılır.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        bandstop_dialog = tk.Toplevel(self.root)
+        bandstop_dialog.title("Bant Durduran Filtre")
+        bandstop_dialog.geometry("400x300")
+        bandstop_dialog.resizable(False, False)
+        
+        # İç yarıçap için slider
+        Label(bandstop_dialog, text="İç Yarıçap:").pack(pady=5)
+        inner_radius_scale = Scale(bandstop_dialog, from_=1, to=100, resolution=1, orient=HORIZONTAL, length=300)
+        inner_radius_scale.set(20)  # Varsayılan değer
+        inner_radius_scale.pack(pady=5)
+        
+        # Dış yarıçap için slider
+        Label(bandstop_dialog, text="Dış Yarıçap:").pack(pady=5)
+        outer_radius_scale = Scale(bandstop_dialog, from_=10, to=200, resolution=1, orient=HORIZONTAL, length=300)
+        outer_radius_scale.set(50)  # Varsayılan değer
+        outer_radius_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(bandstop_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_band_stop_filter():
+            inner_radius = inner_radius_scale.get()
+            outer_radius = outer_radius_scale.get()
+            
+            # İç yarıçap dış yarıçaptan büyük olmamalı
+            if inner_radius >= outer_radius:
+                messagebox.showerror("Hata", "İç yarıçap dış yarıçaptan küçük olmalıdır!")
+                return
+                
+            show_spectrum = preview_var.get()
+            self.apply_band_stop(inner_radius, outer_radius, gray_image, show_spectrum)
+            bandstop_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(bandstop_dialog, text="Uygula", command=apply_band_stop_filter, width=15).pack(pady=10)
+    
+    def apply_band_stop(self, inner_radius, outer_radius, gray_image, show_spectrum=False):
+        """
+        Görüntüye Bant Durduran Filtre uygular.
+        
+        Parametreler:
+            inner_radius: İç yarıçap (küçük değer)
+            outer_radius: Dış yarıçap (büyük değer)
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Fourier dönüşümünü hesapla
+        _, _, dft_shift = self._fourier_transform(gray_image)
+        
+        # Görüntü merkez koordinatlarını bul
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Bant durduran maske oluştur (bant geçiren maskenin tersi)
+        mask = np.ones((rows, cols, 2), np.uint8)
+        center = [crow, ccol]
+        x, y = np.ogrid[:rows, :cols]
+        
+        # İç ve dış daireler arasındaki alanı hesapla (1 yerine 0 atanacak)
+        mask_area = np.logical_and(
+            (x - center[0]) ** 2 + (y - center[1]) ** 2 >= inner_radius ** 2,
+            (x - center[0]) ** 2 + (y - center[1]) ** 2 <= outer_radius ** 2
+        )
+        mask[mask_area] = 0
+        
+        # Filtreyi uygula
+        filtered_dft = dft_shift * mask
+        
+        # Görüntüyü geri oluştur
+        filtered_image = self._inverse_fourier_transform(filtered_dft, (rows, cols))
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Filtreli spektrumu hesapla
+            filtered_spectrum = 20 * np.log(cv2.magnitude(filtered_dft[:,:,0], filtered_dft[:,:,1]) + 1)
+            
+            # Yan yana göstermek için
+            result = np.hstack((filtered_image, cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)))
+            cv2.imshow("Bant Durduran Filtre ve Spektrum", result)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için Fourier dönüşümünü hesapla
+                channel = self.current_image[:,:,i]
+                _, _, dft_shift_channel = self._fourier_transform(channel)
+                
+                # Filtreyi uygula
+                filtered_dft_channel = dft_shift_channel * mask
+                
+                # Kanalı geri oluştur
+                result[:,:,i] = self._inverse_fourier_transform(filtered_dft_channel, (rows, cols))
+                
+            self.current_image = result
+        else:
+            self.current_image = filtered_image
+            
+        self.display_image(self.current_image)
+
+    def open_butterworth_filter_dialog(self):
+        """
+        Butterworth Filtre dialog penceresini açar.
+        
+        Butterworth filtre, keskin geçişler olmadan frekans bileşenlerini yumuşak bir şekilde
+        filtrelemek için kullanılır. Hem düşük geçiren hem de yüksek geçiren versiyonları mevcuttur.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        butterworth_dialog = tk.Toplevel(self.root)
+        butterworth_dialog.title("Butterworth Filtre")
+        butterworth_dialog.geometry("400x300")
+        butterworth_dialog.resizable(False, False)
+        
+        # Filtre tipi seçimi
+        Label(butterworth_dialog, text="Filtre Tipi:").pack(pady=5)
+        filter_type_var = tk.StringVar(value="lowpass")
+        filter_types = [("Alçak Geçiren", "lowpass"), ("Yüksek Geçiren", "highpass")]
+        
+        for text, value in filter_types:
+            ttk.Radiobutton(butterworth_dialog, text=text, variable=filter_type_var, value=value).pack(anchor=tk.W, padx=20)
+        
+        # Kesim frekansı (D0) için slider
+        Label(butterworth_dialog, text="Kesim Frekansı (D0):").pack(pady=5)
+        d0_scale = Scale(butterworth_dialog, from_=1, to=100, resolution=1, orient=HORIZONTAL, length=300)
+        d0_scale.set(30)  # Varsayılan değer
+        d0_scale.pack(pady=5)
+        
+        # Filtre derecesi (n) için slider
+        Label(butterworth_dialog, text="Filtre Derecesi (n):").pack(pady=5)
+        n_scale = Scale(butterworth_dialog, from_=1, to=10, resolution=1, orient=HORIZONTAL, length=300)
+        n_scale.set(2)  # Varsayılan değer
+        n_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(butterworth_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_butterworth_filter():
+            filter_type = filter_type_var.get()
+            d0 = d0_scale.get()
+            n = n_scale.get()
+            show_spectrum = preview_var.get()
+            self.apply_butterworth(filter_type, d0, n, gray_image, show_spectrum)
+            butterworth_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(butterworth_dialog, text="Uygula", command=apply_butterworth_filter, width=15).pack(pady=10)
+    
+    def apply_butterworth(self, filter_type, d0, n, gray_image, show_spectrum=False):
+        """
+        Görüntüye Butterworth Filtre uygular.
+        
+        Parametreler:
+            filter_type: Filtre tipi ('lowpass' veya 'highpass')
+            d0: Kesim frekansı
+            n: Filtre derecesi
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Fourier dönüşümünü hesapla
+        _, _, dft_shift = self._fourier_transform(gray_image)
+        
+        # Görüntü merkez koordinatlarını bul
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Butterworth filtre maskesini oluştur
+        mask = np.zeros((rows, cols, 2), np.float32)
+        
+        for i in range(rows):
+            for j in range(cols):
+                # Merkeze olan uzaklığı hesapla
+                d = np.sqrt((i - crow) ** 2 + (j - ccol) ** 2)
+                
+                # Butterworth filtre fonksiyonunu uygula
+                if filter_type == 'lowpass':
+                    # Alçak geçiren Butterworth filtre
+                    mask[i, j] = 1 / (1 + (d / d0) ** (2 * n))
+                else:
+                    # Yüksek geçiren Butterworth filtre
+                    mask[i, j] = 1 / (1 + (d0 / (d + 0.000001)) ** (2 * n))
+        
+        # Filtreyi uygula
+        filtered_dft = dft_shift * mask
+        
+        # Görüntüyü geri oluştur
+        filtered_image = self._inverse_fourier_transform(filtered_dft, (rows, cols))
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Filtreli spektrumu hesapla
+            filtered_spectrum = 20 * np.log(cv2.magnitude(filtered_dft[:,:,0], filtered_dft[:,:,1]) + 1)
+            
+            # Yan yana göstermek için
+            result = np.hstack((filtered_image, cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)))
+            cv2.imshow("Butterworth Filtre ve Spektrum", result)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için Fourier dönüşümünü hesapla
+                channel = self.current_image[:,:,i]
+                _, _, dft_shift_channel = self._fourier_transform(channel)
+                
+                # Filtreyi uygula
+                filtered_dft_channel = dft_shift_channel * mask
+                
+                # Kanalı geri oluştur
+                result[:,:,i] = self._inverse_fourier_transform(filtered_dft_channel, (rows, cols))
+                
+            self.current_image = result
+        else:
+            self.current_image = filtered_image
+            
+        self.display_image(self.current_image)
+
+    def open_gaussian_freq_dialog(self):
+        """
+        Frekans Uzayı Gaussian Filtreleme dialog penceresini açar.
+        
+        Gaussian filtreleri, Butterworth filtrelerden daha yumuşak geçişler sağlar.
+        Hem düşük geçiren hem de yüksek geçiren versiyonları mevcuttur.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        gaussian_filter_dialog = tk.Toplevel(self.root)
+        gaussian_filter_dialog.title("Frekans Uzayı Gaussian Filtre")
+        gaussian_filter_dialog.geometry("400x300")
+        gaussian_filter_dialog.resizable(False, False)
+        
+        # Filtre tipi seçimi
+        Label(gaussian_filter_dialog, text="Filtre Tipi:").pack(pady=5)
+        filter_type_var = tk.StringVar(value="lowpass")
+        filter_types = [("Alçak Geçiren", "lowpass"), ("Yüksek Geçiren", "highpass")]
+        
+        for text, value in filter_types:
+            ttk.Radiobutton(gaussian_filter_dialog, text=text, variable=filter_type_var, value=value).pack(anchor=tk.W, padx=20)
+        
+        # Sigma değeri için slider
+        Label(gaussian_filter_dialog, text="Sigma Değeri:").pack(pady=5)
+        sigma_scale = Scale(gaussian_filter_dialog, from_=1, to=100, resolution=1, orient=HORIZONTAL, length=300)
+        sigma_scale.set(30)  # Varsayılan değer
+        sigma_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(gaussian_filter_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_gaussian_filter_freq():
+            filter_type = filter_type_var.get()
+            sigma = sigma_scale.get()
+            show_spectrum = preview_var.get()
+            self.apply_gaussian_freq(filter_type, sigma, gray_image, show_spectrum)
+            gaussian_filter_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(gaussian_filter_dialog, text="Uygula", command=apply_gaussian_filter_freq, width=15).pack(pady=10)
+    
+    def apply_gaussian_freq(self, filter_type, sigma, gray_image, show_spectrum=False):
+        """
+        Görüntüye frekans uzayında Gaussian Filtre uygular.
+        
+        Parametreler:
+            filter_type: Filtre tipi ('lowpass' veya 'highpass')
+            sigma: Gaussian fonksiyonunun standart sapması
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Fourier dönüşümünü hesapla
+        _, _, dft_shift = self._fourier_transform(gray_image)
+        
+        # Görüntü merkez koordinatlarını bul
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Gaussian filtre maskesini oluştur
+        mask = np.zeros((rows, cols, 2), np.float32)
+        
+        for i in range(rows):
+            for j in range(cols):
+                # Merkeze olan uzaklığı hesapla
+                d_squared = (i - crow) ** 2 + (j - ccol) ** 2
+                
+                # Gaussian filtre fonksiyonunu uygula
+                if filter_type == 'lowpass':
+                    # Alçak geçiren Gaussian filtre
+                    mask[i, j] = np.exp(-d_squared / (2 * sigma ** 2))
+                else:
+                    # Yüksek geçiren Gaussian filtre
+                    mask[i, j] = 1 - np.exp(-d_squared / (2 * sigma ** 2))
+        
+        # Filtreyi uygula
+        filtered_dft = dft_shift * mask
+        
+        # Görüntüyü geri oluştur
+        filtered_image = self._inverse_fourier_transform(filtered_dft, (rows, cols))
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Filtreli spektrumu hesapla
+            filtered_spectrum = 20 * np.log(cv2.magnitude(filtered_dft[:,:,0], filtered_dft[:,:,1]) + 1)
+            
+            # Yan yana göstermek için
+            result = np.hstack((filtered_image, cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)))
+            cv2.imshow("Gaussian Filtre ve Spektrum", result)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için Fourier dönüşümünü hesapla
+                channel = self.current_image[:,:,i]
+                _, _, dft_shift_channel = self._fourier_transform(channel)
+                
+                # Filtreyi uygula
+                filtered_dft_channel = dft_shift_channel * mask
+                
+                # Kanalı geri oluştur
+                result[:,:,i] = self._inverse_fourier_transform(filtered_dft_channel, (rows, cols))
+                
+            self.current_image = result
+        else:
+            self.current_image = filtered_image
+            
+        self.display_image(self.current_image)
+
+    def apply_homomorphic_filter(self):
+        """
+        Homomorfik filtre uygulamak için bir dialog penceresi açar.
+        
+        Homomorfik filtre, aydınlatma varyasyonlarını azaltırken görüntü detaylarını korumak için kullanılır.
+        Logaritmik dönüşüm ve Fourier dönüşümü kombinasyonu kullanarak çalışır.
+        Aydınlatma (düşük frekans) bileşenlerini azaltır ve reflektans (yüksek frekans) bileşenlerini güçlendirir.
+        """
+        if self.current_image is None:
+            return
+            
+        # Görüntü gri tonlamada değilse çevir
+        if len(self.current_image.shape) > 2:
+            gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_image = self.current_image.copy()
+        
+        # Yeni bir dialog penceresi oluştur
+        homomorphic_dialog = tk.Toplevel(self.root)
+        homomorphic_dialog.title("Homomorfik Filtre")
+        homomorphic_dialog.geometry("400x350")
+        homomorphic_dialog.resizable(False, False)
+        
+        # Gamma Yüksek (yüksek frekans güçlendirme) için slider
+        Label(homomorphic_dialog, text="Gamma Yüksek (γH):").pack(pady=5)
+        gamma_h_scale = Scale(homomorphic_dialog, from_=1.0, to=3.0, resolution=0.1, orient=HORIZONTAL, length=300)
+        gamma_h_scale.set(1.5)  # Varsayılan değer
+        gamma_h_scale.pack(pady=5)
+        
+        # Gamma Düşük (düşük frekans zayıflatma) için slider
+        Label(homomorphic_dialog, text="Gamma Düşük (γL):").pack(pady=5)
+        gamma_l_scale = Scale(homomorphic_dialog, from_=0.1, to=1.0, resolution=0.1, orient=HORIZONTAL, length=300)
+        gamma_l_scale.set(0.5)  # Varsayılan değer
+        gamma_l_scale.pack(pady=5)
+        
+        # Kesim frekansı (D0) için slider
+        Label(homomorphic_dialog, text="Kesim Frekansı (D0):").pack(pady=5)
+        d0_scale = Scale(homomorphic_dialog, from_=10, to=100, resolution=1, orient=HORIZONTAL, length=300)
+        d0_scale.set(30)  # Varsayılan değer
+        d0_scale.pack(pady=5)
+        
+        # Görüntü önizleme için
+        preview_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(homomorphic_dialog, text="Genlik Spektrumunu Göster", variable=preview_var).pack(pady=5)
+        
+        # Uygula butonu
+        def apply_homomorphic_filter():
+            gamma_h = gamma_h_scale.get()
+            gamma_l = gamma_l_scale.get()
+            d0 = d0_scale.get()
+            show_spectrum = preview_var.get()
+            self.apply_homomorphic(gamma_h, gamma_l, d0, gray_image, show_spectrum)
+            homomorphic_dialog.destroy()  # Dialog penceresini kapat
+        
+        Button(homomorphic_dialog, text="Uygula", command=apply_homomorphic_filter, width=15).pack(pady=10)
+    
+    def apply_homomorphic(self, gamma_h, gamma_l, d0, gray_image, show_spectrum=False):
+        """
+        Görüntüye homomorfik filtre uygular.
+        
+        Parametreler:
+            gamma_h: Yüksek frekans bileşenleri için gamma değeri (1.0'dan büyük)
+            gamma_l: Düşük frekans bileşenleri için gamma değeri (1.0'dan küçük)
+            d0: Kesim frekansı
+            gray_image: Gri tonlamalı görüntü
+            show_spectrum: Genlik spektrumunu gösterme seçeneği
+        """
+        # Görüntüye küçük bir değer ekleyip logaritmasını al (0 değerlerini önlemek için)
+        # ln(I) = ln(L) + ln(R), burada I görüntü, L aydınlatma, R reflektans
+        img_log = np.log1p(np.array(gray_image, dtype="float"))
+        
+        # Fourier dönüşümünü hesapla
+        img_fft = np.fft.fft2(img_log)
+        
+        # Düşük frekans bileşenlerini merkeze taşı
+        img_fft_shift = np.fft.fftshift(img_fft)
+        
+        # Görüntü boyutlarını al
+        rows, cols = gray_image.shape
+        crow, ccol = rows // 2, cols // 2
+        
+        # Homomorfik filtre maskesi oluştur
+        y, x = np.ogrid[0:rows, 0:cols]
+        d = np.sqrt((y - crow) ** 2 + (x - ccol) ** 2)
+        mask = gamma_l + (gamma_h - gamma_l) * (1 - np.exp(-((d ** 2) / (2 * (d0 ** 2)))))
+        
+        # Filtreyi uygula
+        img_fft_shift_filtered = img_fft_shift * mask
+        
+        # Genlik spektrumunu gösterme seçeneği
+        if show_spectrum:
+            # Maskeyi normalize edip göster
+            mask_normalized = cv2.normalize(mask, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+            
+            # Fourier genlik spektrumunu hesapla
+            magnitude_spectrum = 20 * np.log(np.abs(img_fft_shift) + 1)
+            magnitude_spectrum_normalized = cv2.normalize(magnitude_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+            
+            # Filtreli Fourier genlik spektrumunu hesapla
+            filtered_spectrum = 20 * np.log(np.abs(img_fft_shift_filtered) + 1)
+            filtered_spectrum_normalized = cv2.normalize(filtered_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+            
+            # Maskeyi ve spektrumları göster
+            cv2.imshow("Filtre Maskesi", mask_normalized)
+            cv2.imshow("Orijinal Spektrum", magnitude_spectrum_normalized)
+            cv2.imshow("Filtreli Spektrum", filtered_spectrum_normalized)
+        
+        # Merkez kaydırmasını geri al
+        img_fft_filtered = np.fft.ifftshift(img_fft_shift_filtered)
+        
+        # Ters Fourier dönüşümünü hesapla
+        img_ifft = np.fft.ifft2(img_fft_filtered)
+        
+        # Kompleks sayıların gerçek kısmını al
+        img_ifft_real = np.real(img_ifft)
+        
+        # Logaritmik dönüşümün tersini al
+        img_exp = np.expm1(img_ifft_real)
+        
+        # Görüntüyü 0-255 aralığına normalize et
+        img_exp = cv2.normalize(img_exp, None, 0, 255, cv2.NORM_MINMAX)
+        img_out = np.uint8(img_exp)
+        
+        # Renkli görüntüye uygula (her kanalı ayrı filtrele)
+        if len(self.current_image.shape) > 2:
+            result = np.zeros_like(self.current_image)
+            for i in range(3):
+                # Her kanal için işlemi tekrarla
+                channel = self.current_image[:,:,i]
+                
+                # Görüntüye küçük bir değer ekleyip logaritmasını al
+                channel_log = np.log1p(np.array(channel, dtype="float"))
+                
+                # Fourier dönüşümünü hesapla
+                channel_fft = np.fft.fft2(channel_log)
+                
+                # Düşük frekans bileşenlerini merkeze taşı
+                channel_fft_shift = np.fft.fftshift(channel_fft)
+                
+                # Filtreyi uygula
+                channel_fft_shift_filtered = channel_fft_shift * mask
+                
+                # Merkez kaydırmasını geri al
+                channel_fft_filtered = np.fft.ifftshift(channel_fft_shift_filtered)
+                
+                # Ters Fourier dönüşümünü hesapla
+                channel_ifft = np.fft.ifft2(channel_fft_filtered)
+                
+                # Kompleks sayıların gerçek kısmını al
+                channel_ifft_real = np.real(channel_ifft)
+                
+                # Logaritmik dönüşümün tersini al
+                channel_exp = np.expm1(channel_ifft_real)
+                
+                # Görüntüyü 0-255 aralığına normalize et
+                channel_exp = cv2.normalize(channel_exp, None, 0, 255, cv2.NORM_MINMAX)
+                result[:,:,i] = np.uint8(channel_exp)
+                
+            self.current_image = result
+        else:
+            self.current_image = img_out
+            
+        self.display_image(self.current_image)
 
 # Ana program başlangıcı
 # '__main__' kontrolü, bu dosyanın doğrudan çalıştırıldığında çalışmasını sağlar
