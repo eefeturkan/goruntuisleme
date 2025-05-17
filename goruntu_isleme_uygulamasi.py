@@ -150,9 +150,23 @@ class GoruntuIslemeUygulamasi:
         self.right_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.right_scrollbar.config(command=self.right_canvas.yview)
         
-        # Canvas içine konulacak frame oluştur
-        self.right_frame = Frame(self.right_canvas, bg="#e0e0e0")
-        self.right_canvas.create_window((0, 0), window=self.right_frame, anchor="nw")
+        # Canvas içine konulacak ana frame yerine Notebook widget'ı
+        self.right_notebook = ttk.Notebook(self.right_canvas)
+        
+        # Sekmeleri oluşturacak frame'ler (bunlar create_control_buttons içinde doldurulacak)
+        self.transforms_tab = Frame(self.right_notebook, bg="#e0e0e0")
+        self.spatial_filters_tab = Frame(self.right_notebook, bg="#e0e0e0")
+        self.frequency_filters_tab = Frame(self.right_notebook, bg="#e0e0e0")
+        self.edge_detection_tab = Frame(self.right_notebook, bg="#e0e0e0")
+        self.advanced_ops_tab = Frame(self.right_notebook, bg="#e0e0e0")
+
+        self.right_notebook.add(self.transforms_tab, text='Dönüşümler')
+        self.right_notebook.add(self.spatial_filters_tab, text='Mekansal')
+        self.right_notebook.add(self.frequency_filters_tab, text='Frekans')
+        self.right_notebook.add(self.edge_detection_tab, text='Kenar Algılama')
+        self.right_notebook.add(self.advanced_ops_tab, text='Gelişmiş')
+        
+        self.right_canvas.create_window((0, 0), window=self.right_notebook, anchor="nw")
         
         # Kontrol butonları - Sol ve sağ paneldeki butonları oluşturan metodu çağırıyoruz
         self.create_control_buttons()
@@ -162,9 +176,9 @@ class GoruntuIslemeUygulamasi:
         self.left_canvas.config(scrollregion=self.left_canvas.bbox("all"))
         self.left_canvas.config(width=330, height=800)
         
-        self.right_frame.update_idletasks()
+        self.right_notebook.update_idletasks()
         self.right_canvas.config(scrollregion=self.right_canvas.bbox("all"))
-        self.right_canvas.config(width=330, height=800)
+        self.right_canvas.config(width=340, height=800) # Genişlik 330'dan 340'a çıkarıldı
     
     def create_control_buttons(self):
         """
@@ -250,66 +264,64 @@ class GoruntuIslemeUygulamasi:
         self.contrast_scale.set(1.0)  # Başlangıç değerini 1.0 olarak ayarla (normal kontrast)
         self.contrast_scale.pack(pady=2)
         
-        # -------------- SAĞ PANEL İÇİN KONTROL BUTONLARI --------------
+        # -------------- SAĞ PANEL İÇİN KONTROL BUTONLARI (SEKMELİ YAPI) --------------
         
-        # Görüntü Dönüşümleri bölümü
-        transforms_frame = Frame(self.right_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
-        transforms_frame.pack(fill=tk.X, padx=5, pady=5)
+        # --- Dönüşümler Sekmesi ---
+        transforms_frame_tab_content = Frame(self.transforms_tab, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        transforms_frame_tab_content.pack(fill=tk.X, padx=5, pady=5)
+        Label(transforms_frame_tab_content, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        Button(transforms_frame_tab_content, text="Görüntüyü Taşı", command=self.open_translation_dialog, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="X Ekseninde Aynala", command=self.flip_horizontal, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="Y Ekseninde Aynala", command=self.flip_vertical, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="Görüntüyü Eğ", command=self.open_shearing_dialog, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="Görüntüyü Ölçekle", command=self.open_scaling_dialog, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="Görüntüyü Döndür", command=self.open_rotation_dialog, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="Görüntüyü Kırp", command=self.open_cropping_dialog, width=22).pack(pady=2)
+        Button(transforms_frame_tab_content, text="Perspektif Düzelt", command=self.open_perspective_correction, width=22).pack(pady=2)
+
+        # --- Mekansal Filtreler Sekmesi ---
+        spatial_filters_frame_content = Frame(self.spatial_filters_tab, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        spatial_filters_frame_content.pack(fill=tk.X, padx=5, pady=5)
+        Label(spatial_filters_frame_content, text="Mekansal Alan Filtreleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        Button(spatial_filters_frame_content, text="Ortalama Filtresi", command=self.open_mean_filter_dialog, width=22).pack(pady=2)
+        Button(spatial_filters_frame_content, text="Medyan Filtresi", command=self.open_median_filter_dialog, width=22).pack(pady=2)
+        Button(spatial_filters_frame_content, text="Gaussian Filtresi", command=self.open_gaussian_filter_dialog, width=22).pack(pady=2)
+        Button(spatial_filters_frame_content, text="Konservatif Filtre", command=self.open_conservative_filter_dialog, width=22).pack(pady=2)
+        Button(spatial_filters_frame_content, text="Crimmins Speckle", command=self.open_crimmins_speckle_dialog, width=22).pack(pady=2)
+        Button(spatial_filters_frame_content, text="Aşındırma (Erode)", command=lambda: self.open_morph_dialog("Erode"), width=22).pack(pady=2)
+        Button(spatial_filters_frame_content, text="Genişletme (Dilate)", command=lambda: self.open_morph_dialog("Dilate"), width=22).pack(pady=2)
+
+        # --- Frekans Filtreleri Sekmesi ---
+        frequency_filters_frame_content = Frame(self.frequency_filters_tab, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        frequency_filters_frame_content.pack(fill=tk.X, padx=5, pady=5)
+        Label(frequency_filters_frame_content, text="Frekans Alanı Filtreleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        Button(frequency_filters_frame_content, text="Fourier Alçak Geçiren", command=self.open_fourier_lowpass_dialog, width=22).pack(pady=2)
+        Button(frequency_filters_frame_content, text="Fourier Yüksek Geçiren", command=self.open_fourier_highpass_dialog, width=22).pack(pady=2)
+        Button(frequency_filters_frame_content, text="Band Geçiren Filtre", command=self.open_band_pass_dialog, width=22).pack(pady=2)
+        Button(frequency_filters_frame_content, text="Band Durduran Filtre", command=self.open_band_stop_dialog, width=22).pack(pady=2)
+        Button(frequency_filters_frame_content, text="Butterworth Filtresi", command=self.open_butterworth_filter_dialog, width=22).pack(pady=2)
+        Button(frequency_filters_frame_content, text="Gauss Düşük/Yüksek Geçiren", command=self.open_gaussian_freq_dialog, width=22).pack(pady=2)
+        Button(frequency_filters_frame_content, text="Homomorfik Filtre", command=self.apply_homomorphic_filter, width=22).pack(pady=2)
         
-        # Başlık etiketi
-        Label(transforms_frame, text="Görüntü Dönüşümleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
-        
-        # Taşıma işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Taşı", command=self.open_translation_dialog, 
-            width=20).pack(pady=2)
-        
-        # Aynalama işlemleri için butonlar
-        Button(transforms_frame, text="X Ekseninde Aynala", command=self.flip_horizontal, 
-            width=20).pack(pady=2)
-        Button(transforms_frame, text="Y Ekseninde Aynala", command=self.flip_vertical, 
-            width=20).pack(pady=2)
-        
-        # Eğme (Shearing) işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Eğ", command=self.open_shearing_dialog, 
-            width=20).pack(pady=2)
-            
-        # Ölçekleme (Zoom in/out) işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Ölçekle", command=self.open_scaling_dialog, 
-            width=20).pack(pady=2)
-            
-        # Döndürme (Rotation) işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Döndür", command=self.open_rotation_dialog, 
-            width=20).pack(pady=2)
-            
-        # Kırpma (Cropping) işlemi için buton
-        Button(transforms_frame, text="Görüntüyü Kırp", command=self.open_cropping_dialog, 
-            width=20).pack(pady=2)
-            
-        # Perspektif düzeltme işlemi için buton
-        Button(transforms_frame, text="Perspektif Düzelt", command=self.open_perspective_correction, 
-            width=20).pack(pady=2)
-        
-        # Filtreleme İşlemleri bölümü
-        filtering_frame = Frame(self.right_frame, bg="#e0e0e0", relief=RAISED, borderwidth=1)
-        filtering_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        Label(filtering_frame, text="Filtreleme İşlemleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
-        
-        # Konvolüsyon filtreleri
-        Button(filtering_frame, text="Ortalama Filtresi", command=self.open_mean_filter_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Medyan Filtresi", command=self.open_median_filter_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Gaussian Filtresi", command=self.open_gaussian_filter_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Konservatif Filtre", command=self.open_conservative_filter_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Crimmins Speckle", command=self.open_crimmins_speckle_dialog, width=20).pack(pady=2)
-        
-        # Frekans alanı filtreleri
-        Button(filtering_frame, text="Fourier Alçak Geçiren", command=self.open_fourier_lowpass_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Fourier Yüksek Geçiren", command=self.open_fourier_highpass_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Band Geçiren Filtre", command=self.open_band_pass_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Band Durduran Filtre", command=self.open_band_stop_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Butterworth Filtresi", command=self.open_butterworth_filter_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Gauss Düşük/Yüksek Geçiren", command=self.open_gaussian_freq_dialog, width=20).pack(pady=2)
-        Button(filtering_frame, text="Homomorfik Filtre", command=self.apply_homomorphic_filter, width=20).pack(pady=2)
+        # --- Kenar Algılama Sekmesi ---
+        edge_detection_frame_content = Frame(self.edge_detection_tab, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        edge_detection_frame_content.pack(fill=tk.X, padx=5, pady=5)
+        Label(edge_detection_frame_content, text="Kenar Algılama Filtreleri", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        Button(edge_detection_frame_content, text="Sobel Filtresi", command=self.apply_sobel_filter, width=22).pack(pady=2)
+        Button(edge_detection_frame_content, text="Prewitt Filtresi", command=self.apply_prewitt_filter, width=22).pack(pady=2)
+        Button(edge_detection_frame_content, text="Roberts Cross Filtresi", command=self.apply_roberts_cross_filter, width=22).pack(pady=2)
+        Button(edge_detection_frame_content, text="Compass Filtresi", command=self.apply_compass_filter, width=22).pack(pady=2)
+        Button(edge_detection_frame_content, text="Canny Kenar Algılama", command=self.open_canny_dialog, width=22).pack(pady=2)
+        Button(edge_detection_frame_content, text="Laplace Filtresi", command=self.apply_laplacian_filter, width=22).pack(pady=2)
+        Button(edge_detection_frame_content, text="Gabor Filtresi", command=self.open_gabor_filter_dialog, width=22).pack(pady=2)
+
+        # --- Gelişmiş İşlemler Sekmesi ---
+        advanced_ops_frame_content = Frame(self.advanced_ops_tab, bg="#e0e0e0", relief=RAISED, borderwidth=1)
+        advanced_ops_frame_content.pack(fill=tk.X, padx=5, pady=5)
+        Label(advanced_ops_frame_content, text="Gelişmiş Görüntü İşleme", bg="#e0e0e0", font=("Arial", 10, "bold")).pack(pady=5)
+        Button(advanced_ops_frame_content, text="Hough Dönüşümü (Çizgiler)", command=self.open_hough_line_dialog, width=25).pack(pady=2)
+        Button(advanced_ops_frame_content, text="Hough Dönüşümü (Çemberler)", command=self.open_hough_circle_dialog, width=25).pack(pady=2)
+        Button(advanced_ops_frame_content, text="K-Means Segmentasyon", command=self.open_kmeans_segmentation_dialog, width=25).pack(pady=2)
     
     def open_image(self):
         """
@@ -2491,6 +2503,549 @@ class GoruntuIslemeUygulamasi:
             self.current_image = img_out
             
         self.display_image(self.current_image)
+
+    def apply_sobel_filter(self):
+        """
+        Sobel filtresi uygulamak için bir dialog penceresi açar.
+        
+        Sobel filtresi, kenarları güçlendiren bir filtre türüdür.
+        """
+        if self.current_image is None:
+            return
+            
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        
+        # Sobel filtresi uygula
+        grad_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
+        grad_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
+        
+        # Gradyan büyüklüğünü hesapla
+        gradient_magnitude = cv2.magnitude(grad_x, grad_y)
+        
+        # Gradyan büyüklüğünü normalize et
+        sobel_output = cv2.normalize(gradient_magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        
+        # Tek kanallı görüntüyü 3 kanallı görüntüye dönüştür (gösterim için)
+        self.current_image = cv2.cvtColor(sobel_output, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def apply_prewitt_filter(self):
+        """
+        Prewitt filtresi uygulamak için bir dialog penceresi açar.
+        
+        Prewitt filtresi, kenarları güçlendiren bir filtre türüdür.
+        """
+        if self.current_image is None:
+            return
+            
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        
+        # Prewitt çekirdekleri
+        kernel_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+        kernel_y = np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
+        
+        # Prewitt filtresi uygula
+        grad_x = cv2.filter2D(gray_image, cv2.CV_64F, kernel_x)
+        grad_y = cv2.filter2D(gray_image, cv2.CV_64F, kernel_y)
+        
+        # Gradyan büyüklüğünü hesapla
+        gradient_magnitude = cv2.magnitude(grad_x, grad_y)
+        
+        # Gradyan büyüklüğünü normalize et
+        prewitt_output = cv2.normalize(gradient_magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        
+        # Tek kanallı görüntüyü 3 kanallı görüntüye dönüştür (gösterim için)
+        self.current_image = cv2.cvtColor(prewitt_output, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def apply_roberts_cross_filter(self):
+        """
+        Roberts Cross filtresi uygulamak için bir dialog penceresi açar.
+        
+        Roberts Cross filtresi, kenarları güçlendiren bir filtre türüdür.
+        """
+        if self.current_image is None:
+            return
+            
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        
+        # Roberts Cross çekirdekleri
+        kernel_x = np.array([[1, 0], [0, -1]])
+        kernel_y = np.array([[0, 1], [-1, 0]])
+        
+        # Roberts Cross filtresi uygula
+        grad_x = cv2.filter2D(gray_image, cv2.CV_64F, kernel_x)
+        grad_y = cv2.filter2D(gray_image, cv2.CV_64F, kernel_y)
+        
+        # Gradyan büyüklüğünü hesapla
+        gradient_magnitude = cv2.magnitude(grad_x, grad_y)
+        
+        # Gradyan büyüklüğünü normalize et
+        roberts_output = cv2.normalize(gradient_magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        
+        # Tek kanallı görüntüyü 3 kanallı görüntüye dönüştür (gösterim için)
+        self.current_image = cv2.cvtColor(roberts_output, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def apply_compass_filter(self):
+        """
+        Compass filtresi uygulamak için bir dialog penceresi açar.
+        
+        Compass filtresi, kenarları güçlendiren bir filtre türüdür.
+        """
+        if self.current_image is None:
+            return
+            
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        
+        # Compass çekirdekleri (Kirsch operatörü gibi)
+        kernels = [
+            np.array([[5, 5, 5], [-3, 0, -3], [-3, -3, -3]]),  # Kuzey
+            np.array([[5, 5, -3], [5, 0, -3], [-3, -3, -3]]),  # Kuzeydoğu
+            np.array([[5, -3, -3], [5, 0, -3], [5, -3, -3]]),  # Doğu
+            np.array([[-3, -3, -3], [5, 0, -3], [5, 5, -3]]),  # Güneydoğu
+            np.array([[-3, -3, -3], [-3, 0, -3], [5, 5, 5]]),  # Güney
+            np.array([[-3, -3, -3], [-3, 0, 5], [-3, 5, 5]]),  # Güneybatı
+            np.array([[-3, -3, 5], [-3, 0, 5], [-3, -3, 5]]),  # Batı
+            np.array([[-3, 5, 5], [-3, 0, 5], [-3, -3, -3]])   # Kuzeybatı
+        ]
+        
+        # Her bir çekirdekle konvolüsyon yap
+        max_gradient = np.zeros_like(gray_image, dtype=np.float64)
+        for kernel in kernels:
+            gradient = cv2.filter2D(gray_image, cv2.CV_64F, kernel)
+            np.maximum(max_gradient, np.abs(gradient), out=max_gradient) # En büyük gradyanı al
+            
+        # Sonucu normalize et
+        compass_output = cv2.normalize(max_gradient, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        
+        # Tek kanallı görüntüyü 3 kanallı görüntüye dönüştür (gösterim için)
+        self.current_image = cv2.cvtColor(compass_output, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def open_canny_dialog(self):
+        """
+        Canny kenar algılama için eşik değerlerini ayarlamak üzere bir dialog penceresi açar.
+        """
+        if self.current_image is None:
+            return
+            
+        # Yeni bir dialog penceresi oluştur
+        canny_dialog = tk.Toplevel(self.root)
+        canny_dialog.title("Canny Kenar Algılama")
+        canny_dialog.geometry("300x200")
+        canny_dialog.resizable(False, False)
+        
+        # Düşük eşik değeri için kaydırıcı
+        Label(canny_dialog, text="Düşük Eşik Değeri:").pack(pady=5)
+        low_threshold_scale = Scale(canny_dialog, from_=0, to=255, orient=HORIZONTAL, length=200)
+        low_threshold_scale.set(100)  # Varsayılan değer
+        low_threshold_scale.pack(pady=5)
+        
+        # Yüksek eşik değeri için kaydırıcı
+        Label(canny_dialog, text="Yüksek Eşik Değeri:").pack(pady=5)
+        high_threshold_scale = Scale(canny_dialog, from_=0, to=255, orient=HORIZONTAL, length=200)
+        high_threshold_scale.set(200)  # Varsayılan değer
+        high_threshold_scale.pack(pady=5)
+        
+        # Uygula butonu
+        def apply_canny_edge_detection():
+            low_threshold = low_threshold_scale.get()
+            high_threshold = high_threshold_scale.get()
+            self.apply_canny_filter(low_threshold, high_threshold)
+            canny_dialog.destroy()  # Dialog penceresini kapat
+            
+        Button(canny_dialog, text="Uygula", command=apply_canny_edge_detection).pack(pady=10)
+
+    def apply_canny_filter(self, low_threshold, high_threshold):
+        """
+        Canny kenar algılama filtresini uygular.
+        
+        Parametreler:
+            low_threshold (int): Düşük eşik değeri
+            high_threshold (int): Yüksek eşik değeri
+        """
+        if self.current_image is None:
+            return
+            
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        
+        # Canny kenar algılama uygula
+        edges = cv2.Canny(gray_image, low_threshold, high_threshold)
+        
+        # Tek kanallı görüntüyü 3 kanallı görüntüye dönüştür (gösterim için)
+        self.current_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def apply_laplacian_filter(self):
+        """
+        Laplace filtresi uygular. Kenarları vurgulamak için kullanılır.
+        """
+        if self.current_image is None:
+            messagebox.showerror("Hata", "Lütfen önce bir görüntü açın.")
+            return
+
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        laplacian = cv2.Laplacian(gray_image, cv2.CV_64F)
+        laplacian_abs = cv2.convertScaleAbs(laplacian) # Mutlak değeri alıp 8-bit'e çevir
+
+        self.current_image = cv2.cvtColor(laplacian_abs, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def open_gabor_filter_dialog(self):
+        """
+        Gabor filtresi parametrelerini ayarlamak için bir dialog penceresi açar.
+        """
+        if self.current_image is None:
+            messagebox.showerror("Hata", "Lütfen önce bir görüntü açın.")
+            return
+
+        gabor_dialog = tk.Toplevel(self.root)
+        gabor_dialog.title("Gabor Filtresi Ayarları")
+        gabor_dialog.geometry("350x480") # Yükseklik 400'den 480'e çıkarıldı
+        gabor_dialog.resizable(False, False)
+
+        Label(gabor_dialog, text="Çekirdek Boyutu (ksize):").pack(pady=5)
+        ksize_scale = Scale(gabor_dialog, from_=1, to=31, orient=HORIZONTAL, length=300)
+        ksize_scale.set(15) # Tek sayı olmalı
+        ksize_scale.pack(pady=2)
+        
+        Label(gabor_dialog, text="Sigma (σ):").pack(pady=5)
+        sigma_scale = Scale(gabor_dialog, from_=1.0, to=10.0, resolution=0.1, orient=HORIZONTAL, length=300)
+        sigma_scale.set(5.0)
+        sigma_scale.pack(pady=2)
+
+        Label(gabor_dialog, text="Theta (θ) - Açı (Derece):").pack(pady=5)
+        theta_scale = Scale(gabor_dialog, from_=0, to=180, resolution=15, orient=HORIZONTAL, length=300) # 0, np.pi/4, np.pi/2, 3*np.pi/4
+        theta_scale.set(90)
+        theta_scale.pack(pady=2)
+
+        Label(gabor_dialog, text="Lambda (λ) - Dalga Boyu:").pack(pady=5)
+        lambd_scale = Scale(gabor_dialog, from_=1.0, to=20.0, resolution=0.5, orient=HORIZONTAL, length=300)
+        lambd_scale.set(10.0)
+        lambd_scale.pack(pady=2)
+
+        Label(gabor_dialog, text="Gamma (γ) - En Boy Oranı:").pack(pady=5)
+        gamma_scale = Scale(gabor_dialog, from_=0.1, to=1.0, resolution=0.1, orient=HORIZONTAL, length=300)
+        gamma_scale.set(0.5)
+        gamma_scale.pack(pady=2)
+
+        # Psi (φ) - Faz Ofseti (Radyan)
+        # Genellikle 0 veya np.pi/2 kullanılır. Basitlik için şimdilik 0.
+        # Label(gabor_dialog, text="Psi (φ) - Faz Ofseti:").pack(pady=5)
+        # psi_scale = Scale(gabor_dialog, from_=0, to=np.pi, resolution=np.pi/4, orient=HORIZONTAL, length=300)
+        # psi_scale.set(0)
+        # psi_scale.pack(pady=2)
+
+        def apply_gabor():
+            ksize = int(ksize_scale.get())
+            if ksize % 2 == 0: # Ksize tek olmalı
+                ksize +=1
+            sigma = float(sigma_scale.get())
+            theta = float(theta_scale.get()) * np.pi / 180.0 # Dereceyi radyana çevir
+            lambd = float(lambd_scale.get())
+            gamma = float(gamma_scale.get())
+            psi = 0 # np.pi / 2 # Faz ofseti, genellikle 0 veya pi/2
+            self.apply_gabor_filter(ksize, sigma, theta, lambd, gamma, psi)
+            gabor_dialog.destroy()
+
+        Button(gabor_dialog, text="Uygula", command=apply_gabor).pack(pady=10)
+        
+    def apply_gabor_filter(self, ksize, sigma, theta, lambd, gamma, psi):
+        """
+        Görüntüye Gabor filtresi uygular.
+        """
+        if self.current_image is None:
+            return
+
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        
+        gabor_kernel = cv2.getGaborKernel((ksize, ksize), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_32F)
+        filtered_img = cv2.filter2D(gray_image, cv2.CV_8UC3, gabor_kernel)
+        
+        self.current_image = cv2.cvtColor(filtered_img, cv2.COLOR_GRAY2RGB)
+        self.display_image(self.current_image)
+
+    def open_hough_line_dialog(self):
+        """
+        Hough Çizgi Dönüşümü için parametreleri ayarlamak üzere bir dialog penceresi açar.
+        """
+        if self.current_image is None:
+            messagebox.showerror("Hata", "Lütfen önce bir görüntü açın.")
+            return
+
+        hough_dialog = tk.Toplevel(self.root)
+        hough_dialog.title("Hough Çizgi Dönüşümü Ayarları")
+        hough_dialog.geometry("300x300") # Pencere boyutu ayarlandı
+        hough_dialog.resizable(False, False)
+
+        Label(hough_dialog, text="Rho (Piksel Çözünürlüğü):").pack(pady=5)
+        rho_scale = Scale(hough_dialog, from_=1, to=10, resolution=1, orient=HORIZONTAL, length=200)
+        rho_scale.set(1)
+        rho_scale.pack(pady=5)
+
+        Label(hough_dialog, text="Theta (Açı Çözünürlüğü - Derece):").pack(pady=5)
+        theta_accuracy_scale = Scale(hough_dialog, from_=1, to=10, resolution=1, orient=HORIZONTAL, length=200) # Derece cinsinden
+        theta_accuracy_scale.set(1) # 1 derece hassasiyet
+        theta_accuracy_scale.pack(pady=5)
+
+        Label(hough_dialog, text="Eşik Değeri (Threshold):").pack(pady=5)
+        threshold_scale = Scale(hough_dialog, from_=10, to=500, resolution=10, orient=HORIZONTAL, length=200)
+        threshold_scale.set(150)
+        threshold_scale.pack(pady=5)
+        
+        # Olasılıksal Hough için minLineLength ve maxLineGap eklenebilir.
+        # Şimdilik standart HoughLines kullanılıyor.
+
+        def apply_hough():
+            rho = int(rho_scale.get())
+            theta_accuracy_degrees = int(theta_accuracy_scale.get())
+            theta_accuracy_radians = theta_accuracy_degrees * np.pi / 180.0 # Radyana çevir
+            threshold = int(threshold_scale.get())
+            self.apply_hough_line_transform(rho, theta_accuracy_radians, threshold)
+            hough_dialog.destroy()
+
+        Button(hough_dialog, text="Uygula", command=apply_hough).pack(pady=10)
+
+    def apply_hough_line_transform(self, rho, theta_accuracy, threshold):
+        """
+        Görüntüye Hough Çizgi Dönüşümü uygular ve bulunan çizgileri çizer.
+        """
+        if self.current_image is None:
+            return
+
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        # Kenarları bulmak için Canny uygulanır
+        edges = cv2.Canny(gray_image, 50, 150, apertureSize=3)
+
+        lines = cv2.HoughLines(edges, rho, theta_accuracy, threshold)
+
+        img_with_lines = self.current_image.copy() # Çizgileri orijinal (veya o anki işlenmiş) renkli görüntü üzerine çiz
+
+        if lines is not None:
+            for line in lines:
+                rho_val, theta_val = line[0]
+                a = np.cos(theta_val)
+                b = np.sin(theta_val)
+                x0 = a * rho_val
+                y0 = b * rho_val
+                # x1, y1, x2, y2 noktalarını hesapla (çizginin başlangıç ve bitiş noktaları)
+                x1 = int(x0 + 1000 * (-b))
+                y1 = int(y0 + 1000 * (a))
+                x2 = int(x0 - 1000 * (-b))
+                y2 = int(y0 - 1000 * (a))
+                cv2.line(img_with_lines, (x1, y1), (x2, y2), (0, 0, 255), 2) # Kırmızı çizgiler
+
+        self.current_image = img_with_lines
+        self.display_image(self.current_image)
+        
+    def open_kmeans_segmentation_dialog(self):
+        """
+        K-Means segmentasyonu için küme sayısını (K) ayarlamak üzere bir dialog açar.
+        """
+        if self.current_image is None:
+            messagebox.showerror("Hata", "Lütfen önce bir görüntü açın.")
+            return
+
+        kmeans_dialog = tk.Toplevel(self.root)
+        kmeans_dialog.title("K-Means Segmentasyon Ayarları")
+        kmeans_dialog.geometry("300x150")
+        kmeans_dialog.resizable(False, False)
+
+        Label(kmeans_dialog, text="Küme Sayısı (K):").pack(pady=5)
+        k_scale = Scale(kmeans_dialog, from_=2, to=16, resolution=1, orient=HORIZONTAL, length=200)
+        k_scale.set(8) # Varsayılan K değeri
+        k_scale.pack(pady=5)
+
+        def apply_kmeans():
+            k_clusters = int(k_scale.get())
+            self.apply_kmeans_segmentation(k_clusters)
+            kmeans_dialog.destroy()
+
+        Button(kmeans_dialog, text="Uygula", command=apply_kmeans).pack(pady=10)
+
+    def apply_kmeans_segmentation(self, k_clusters):
+        """
+        Görüntüye K-Means kümeleme tabanlı segmentasyon uygular.
+        """
+        if self.current_image is None:
+            return
+
+        img_data = self.current_image.reshape((-1, 3)) # Piksel verilerini (R,G,B) formatına getir
+        img_data = np.float32(img_data) # cv2.kmeans için float32 olmalı
+
+        # Kümeleme kriterleri ve uygulama
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0) # 10 iterasyon veya epsilon=1.0
+        attempts = 10 # Farklı başlangıç merkezleriyle 10 kez çalıştır
+        
+        # labels: her pikselin hangi kümeye ait olduğu
+        # centers: küme merkezlerinin renkleri
+        ret, labels, centers = cv2.kmeans(img_data, k_clusters, None, criteria, attempts, cv2.KMEANS_RANDOM_CENTERS)
+
+        centers = np.uint8(centers) # Renk değerlerini uint8'e çevir
+        segmented_data = centers[labels.flatten()] # Her pikseli ait olduğu kümenin merkez rengiyle boya
+        
+        segmented_image = segmented_data.reshape((self.current_image.shape)) # Veriyi orijinal görüntü boyutuna geri getir
+
+        self.current_image = segmented_image
+        self.display_image(self.current_image)
+
+    def open_hough_circle_dialog(self):
+        """
+        Hough Çember Dönüşümü için parametreleri ayarlamak üzere bir dialog penceresi açar.
+        """
+        if self.current_image is None:
+            messagebox.showerror("Hata", "Lütfen önce bir görüntü açın.")
+            return
+
+        hough_circle_dialog = tk.Toplevel(self.root)
+        hough_circle_dialog.title("Hough Çember Dönüşümü Ayarları")
+        hough_circle_dialog.geometry("350x530") # Pencere boyutu 450'den 530'a çıkarıldı
+        hough_circle_dialog.resizable(False, False)
+
+        Label(hough_circle_dialog, text="dp (Ters Akümülatör Oranı):").pack(pady=5)
+        dp_scale = Scale(hough_circle_dialog, from_=1.0, to=2.0, resolution=0.1, orient=HORIZONTAL, length=300)
+        dp_scale.set(1.2)
+        dp_scale.pack(pady=2)
+
+        Label(hough_circle_dialog, text="minDist (Merkezler Arası Min Mesafe):").pack(pady=5)
+        min_dist_scale = Scale(hough_circle_dialog, from_=10, to=100, resolution=5, orient=HORIZONTAL, length=300)
+        min_dist_scale.set(20)
+        min_dist_scale.pack(pady=2)
+
+        Label(hough_circle_dialog, text="param1 (Canny Üst Eşiği):").pack(pady=5)
+        param1_scale = Scale(hough_circle_dialog, from_=50, to=250, resolution=10, orient=HORIZONTAL, length=300)
+        param1_scale.set(100)
+        param1_scale.pack(pady=2)
+
+        Label(hough_circle_dialog, text="param2 (Akümülatör Eşiği):").pack(pady=5)
+        param2_scale = Scale(hough_circle_dialog, from_=10, to=100, resolution=5, orient=HORIZONTAL, length=300)
+        param2_scale.set(30)
+        param2_scale.pack(pady=2)
+
+        Label(hough_circle_dialog, text="minRadius (Minimum Yarıçap):").pack(pady=5)
+        min_radius_scale = Scale(hough_circle_dialog, from_=0, to=100, resolution=5, orient=HORIZONTAL, length=300)
+        min_radius_scale.set(0)
+        min_radius_scale.pack(pady=2)
+
+        Label(hough_circle_dialog, text="maxRadius (Maksimum Yarıçap):").pack(pady=5)
+        max_radius_scale = Scale(hough_circle_dialog, from_=0, to=200, resolution=5, orient=HORIZONTAL, length=300)
+        max_radius_scale.set(0) # 0 -> maksimum olası yarıçapı kullanır
+        max_radius_scale.pack(pady=2)
+
+        def apply_hough_circle():
+            dp = float(dp_scale.get())
+            min_dist = int(min_dist_scale.get())
+            param1 = int(param1_scale.get())
+            param2 = int(param2_scale.get())
+            min_radius = int(min_radius_scale.get())
+            max_radius = int(max_radius_scale.get())
+            self.apply_hough_circle_transform(dp, min_dist, param1, param2, min_radius, max_radius)
+            hough_circle_dialog.destroy()
+
+        Button(hough_circle_dialog, text="Uygula", command=apply_hough_circle).pack(pady=10)
+
+    def apply_hough_circle_transform(self, dp, minDist, param1, param2, minRadius, maxRadius):
+        """
+        Görüntüye Hough Çember Dönüşümü uygular ve bulunan çemberleri çizer.
+        """
+        if self.current_image is None:
+            return
+
+        # Görüntüyü gri tonlamaya çevir ve biraz bulanıklaştır (gürültüyü azaltmak için)
+        gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+        gray_image = cv2.medianBlur(gray_image, 5) # Median blur genellikle çember algılamada iyi sonuç verir
+
+        # HoughCircles fonksiyonu ile çemberleri algıla
+        circles = cv2.HoughCircles(
+            gray_image, 
+            cv2.HOUGH_GRADIENT, # Algılama metodu
+            dp=dp,              # Ters akümülatör çözünürlük oranı (1 ise aynı çözünürlük)
+            minDist=minDist,        # Algılanan çemberlerin merkezleri arasındaki minimum mesafe
+            param1=param1,        # Canny kenar algılayıcısının üst eşik değeri
+            param2=param2,        # Çember merkezleri için akümülatör eşiği (küçükse daha fazla çember bulunur)
+            minRadius=minRadius,    # Minimum çember yarıçapı
+            maxRadius=maxRadius     # Maksimum çember yarıçapı
+        )
+
+        img_with_circles = self.current_image.copy()
+
+        if circles is not None:
+            circles = np.uint16(np.around(circles)) # Çember koordinatlarını ve yarıçapını tam sayıya yuvarla
+            for i in circles[0, :]:
+                # Dış çemberi çiz (yeşil)
+                cv2.circle(img_with_circles, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                # Merkez noktasını çiz (mavi)
+                cv2.circle(img_with_circles, (i[0], i[1]), 2, (0, 0, 255), 3)
+        else:
+            messagebox.showinfo("Bilgi", "Belirtilen parametrelerle çember bulunamadı.")
+
+        self.current_image = img_with_circles
+        self.display_image(self.current_image)
+
+    def open_morph_dialog(self, operation_type):
+        """
+        Morfolojik işlemler (Erode, Dilate) için bir dialog penceresi açar.
+        Kullanıcının çekirdek boyutunu ve iterasyon sayısını belirlemesini sağlar.
+        """
+        if self.current_image is None:
+            messagebox.showerror("Hata", "Lütfen önce bir görüntü açın.")
+            return
+
+        morph_dialog = tk.Toplevel(self.root)
+        morph_dialog.title(f"{operation_type} Ayarları")
+        morph_dialog.geometry("300x250")
+        morph_dialog.resizable(False, False)
+
+        Label(morph_dialog, text="Çekirdek Boyutu (örn: 3, 5):" ).pack(pady=5)
+        kernel_size_entry = tk.Entry(morph_dialog, width=10)
+        kernel_size_entry.insert(0, "3")
+        kernel_size_entry.pack(pady=5)
+
+        Label(morph_dialog, text="İterasyon Sayısı:").pack(pady=5)
+        iterations_entry = tk.Entry(morph_dialog, width=10)
+        iterations_entry.insert(0, "1")
+        iterations_entry.pack(pady=5)
+
+        def apply_operation():
+            try:
+                k_size = int(kernel_size_entry.get())
+                iters = int(iterations_entry.get())
+                if k_size <= 0 or iters <= 0:
+                    messagebox.showerror("Hata", "Çekirdek boyutu ve iterasyon pozitif olmalıdır.")
+                    return
+                
+                kernel = np.ones((k_size, k_size), np.uint8)
+
+                # Görüntüyü gri tonlama ve ikiliye çevir (isteğe bağlı, ama morfolojik işlemler genelde ikili görüntülerde daha anlamlı)
+                # Eğer orijinal görüntü üzerinde çalışmak isteniyorsa bu adım atlanabilir veya kullanıcıya seçenek sunulabilir.
+                # Şimdilik orijinal (veya o anki işlenmiş) görüntü üzerinde çalışalım.
+                # gray_image = cv2.cvtColor(self.current_image, cv2.COLOR_RGB2GRAY)
+                # _, binary_image = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
+                # target_image = binary_image
+
+                target_image = self.current_image
+                processed_image = None
+
+                if operation_type == "Erode":
+                    processed_image = cv2.erode(target_image, kernel, iterations=iters)
+                elif operation_type == "Dilate":
+                    processed_image = cv2.dilate(target_image, kernel, iterations=iters)
+                
+                if processed_image is not None:
+                    # Eğer işlem ikili görüntü üzerinde yapıldıysa ve sonuç tek kanallıysa RGB'ye çevir
+                    # if len(processed_image.shape) == 2:
+                    #    self.current_image = cv2.cvtColor(processed_image, cv2.COLOR_GRAY2RGB)
+                    # else:
+                    #    self.current_image = processed_image
+                    self.current_image = processed_image # Direkt ata, display_image zaten RGB bekliyor
+                    self.display_image(self.current_image)
+                
+                morph_dialog.destroy()
+            except ValueError:
+                messagebox.showerror("Hata", "Lütfen geçerli sayılar girin.")
+
+        Button(morph_dialog, text="Uygula", command=apply_operation).pack(pady=20)
 
 # Ana program başlangıcı
 # '__main__' kontrolü, bu dosyanın doğrudan çalıştırıldığında çalışmasını sağlar
